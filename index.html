@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>내돈지킴이 — 구독해지·환불·항의 문구 도우미</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --card:#ffffff; --ink:#1f2733; --sub:#5b6675;
+    --line:#e3e8ef; --brand:#2563eb; --brand-d:#1d4ed8; --ok:#0f9d58;
+    --warn:#b45309; --warnbg:#fff7ed; --shadow:0 4px 18px rgba(20,40,80,.08);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:560px; margin:0 auto; padding:18px 16px 60px;}
+  header h1{font-size:22px; margin:6px 0 2px; display:flex; align-items:center; gap:8px;}
+  header p{margin:0 0 14px; color:var(--sub); font-size:13.5px;}
+  .privacy{
+    background:#eef5ff; border:1px solid #d7e6ff; color:#1e40af;
+    font-size:12.5px; border-radius:10px; padding:8px 11px; margin-bottom:14px;
+  }
+  .tabs{display:flex; gap:6px; margin-bottom:14px;}
+  .tabs button{
+    flex:1; padding:11px 4px; border:1px solid var(--line); background:var(--card);
+    border-radius:11px; font-size:14px; font-weight:600; color:var(--sub); cursor:pointer;
+    transition:.15s;
+  }
+  .tabs button.active{background:var(--brand); color:#fff; border-color:var(--brand);}
+  .tabs button:focus-visible, .make:focus-visible, .copy:focus-visible{outline:2px solid var(--brand-d); outline-offset:2px;}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:16px; box-shadow:var(--shadow); margin-bottom:14px;
+  }
+  label{display:block; font-size:13px; font-weight:600; margin:12px 0 5px;}
+  label:first-child{margin-top:0;}
+  .hint{font-weight:400; color:var(--sub); font-size:12px;}
+  input,select,textarea{
+    width:100%; padding:10px 11px; border:1px solid var(--line); border-radius:10px;
+    font-size:14.5px; font-family:inherit; background:#fcfdff; color:var(--ink);
+  }
+  textarea{min-height:74px; resize:vertical;}
+  input:focus,select:focus,textarea:focus{outline:2px solid #bcd3ff; border-color:var(--brand);}
+  .row{display:flex; gap:10px;}
+  .row>div{flex:1;}
+  .tone{display:flex; gap:8px; margin-top:6px;}
+  .tone label{
+    flex:1; margin:0; display:flex; align-items:center; justify-content:center; gap:6px;
+    border:1px solid var(--line); border-radius:10px; padding:9px; cursor:pointer; font-weight:600;
+  }
+  .tone input{width:auto;}
+  .check{display:flex; align-items:center; gap:8px; margin-top:10px; font-weight:500; font-size:13.5px;}
+  .check input{width:auto;}
+  .make{
+    width:100%; margin-top:16px; padding:14px; border:0; border-radius:12px;
+    background:var(--brand); color:#fff; font-size:16px; font-weight:700; cursor:pointer;
+  }
+  .make:active{background:var(--brand-d);}
+  .result{display:none;}
+  .result.show{display:block;}
+  .result h2{font-size:15px; margin:0 0 8px; display:flex; align-items:center; gap:6px;}
+  .out{
+    white-space:pre-wrap; background:#f8fafc; border:1px dashed #cbd5e1;
+    border-radius:10px; padding:13px; font-size:14px; min-height:60px;
+  }
+  .copy{
+    margin-top:10px; width:100%; padding:12px; border:1px solid var(--brand);
+    background:#fff; color:var(--brand); font-size:14.5px; font-weight:700;
+    border-radius:11px; cursor:pointer;
+  }
+  .copy.done{background:var(--ok); border-color:var(--ok); color:#fff;}
+  .notice{
+    margin-top:12px; background:var(--warnbg); border:1px solid #fde2c2;
+    color:var(--warn); font-size:12.5px; border-radius:10px; padding:10px 12px;
+  }
+  .notice b{color:#92400e;}
+  footer{text-align:center; color:#9aa6b5; font-size:11.5px; margin-top:18px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>💰 내돈지킴이</h1>
+    <p>구독 해지·환불·항의 문구를 막막함 없이 바로 만들어 드려요.</p>
+  </header>
+
+  <div class="privacy">🔒 입력하신 내용은 <b>이 기기 안에서만</b> 처리되며 어디에도 전송·저장되지 않습니다.</div>
+
+  <div class="tabs" role="tablist" aria-label="기능 선택">
+    <button data-tab="cancel" class="active" role="tab" aria-selected="true" aria-controls="pane-cancel">구독해지</button>
+    <button data-tab="refund" role="tab" aria-selected="false" aria-controls="pane-refund">환불요청</button>
+    <button data-tab="complain" role="tab" aria-selected="false" aria-controls="pane-complain">항의·신고</button>
+    <button data-tab="calc" role="tab" aria-selected="false" aria-controls="pane-calc">내돈계산</button>
+  </div>
+
+  <!-- ========== 구독 해지 ========== -->
+  <div class="card pane" id="pane-cancel" role="tabpanel">
+    <label for="c_service">서비스명 <span class="hint">(예: OO뮤직, OO TV)</span></label>
+    <input id="c_service" placeholder="해지할 서비스 이름" />
+
+    <div class="row">
+      <div>
+        <label for="c_account">가입 계정 <span class="hint">(이메일/ID)</span></label>
+        <input id="c_account" placeholder="가입 시 사용한 계정" />
+      </div>
+      <div>
+        <label for="c_name">이름 <span class="hint">(선택)</span></label>
+        <input id="c_name" placeholder="본인 이름" />
+      </div>
+    </div>
+
+    <label for="c_reason">해지 사유</label>
+    <select id="c_reason">
+      <option value="no_use">더 이상 사용하지 않아서</option>
+      <option value="unaware">자동결제인지 모르고 결제됨</option>
+      <option value="cost">비용 부담이 커서</option>
+      <option value="etc">기타 (직접 입력)</option>
+    </select>
+    <input id="c_reason_etc" placeholder="기타 사유를 적어주세요" style="display:none; margin-top:8px;" aria-label="기타 해지 사유" />
+
+    <label class="check"><input type="checkbox" id="c_refund" /> 잘못 빠져나간 최근 자동결제 <b>환불도 함께 요청</b></label>
+    <div class="row" id="c_pay_row" style="display:none;">
+      <div><label for="c_date">결제일 <span class="hint">(선택)</span></label><input id="c_date" placeholder="예: 2026-06-01" /></div>
+      <div><label for="c_amount">금액 <span class="hint">(선택)</span></label><input id="c_amount" placeholder="예: 12,000원" /></div>
+    </div>
+
+    <span class="label" aria-hidden="true" style="display:block;font-size:13px;font-weight:600;margin:12px 0 5px;">말투</span>
+    <div class="tone" role="radiogroup" aria-label="말투">
+      <label><input type="radio" name="c_tone" value="polite" checked /> 정중하게</label>
+      <label><input type="radio" name="c_tone" value="firm" /> 단호하게</label>
+    </div>
+
+    <button class="make" data-make="cancel">문구 만들기</button>
+
+    <div class="result" id="res-cancel">
+      <h2>📄 보낼 문구</h2>
+      <div class="out" id="out-cancel" aria-live="polite" aria-atomic="true"></div>
+      <button class="copy" data-copy="cancel">복사하기</button>
+      <div class="notice"><b>안내</b> · 정기결제 해지·환불 규정은 서비스마다 다릅니다. 본 문구는 <b>요청 작성을 돕는 정보 제공용</b>이며 법적 효력을 보장하지 않습니다.</div>
+    </div>
+  </div>
+
+  <!-- ========== 환불 요청 ========== -->
+  <div class="card pane" id="pane-refund" role="tabpanel" style="display:none;">
+    <label for="r_company">업체/서비스명</label>
+    <input id="r_company" placeholder="결제한 곳 이름" />
+
+    <label for="r_item">상품/서비스 내용</label>
+    <input id="r_item" placeholder="예: 온라인 강의, 헬스 3개월권" />
+
+    <div class="row">
+      <div><label for="r_date">결제일 <span class="hint">(선택)</span></label><input id="r_date" placeholder="예: 2026-06-15" /></div>
+      <div><label for="r_amount">결제금액 <span class="hint">(선택)</span></label><input id="r_amount" placeholder="예: 99,000원" /></div>
+    </div>
+
+    <label for="r_reason">환불 사유</label>
+    <select id="r_reason">
+      <option value="change">단순 변심 (마음이 바뀜)</option>
+      <option value="defect">상품/서비스에 하자·불량이 있음</option>
+      <option value="diff">설명·광고와 실제가 다름</option>
+      <option value="unused">결제 후 전혀 사용하지 않음</option>
+      <option value="dup">중복·오결제됨</option>
+      <option value="etc">기타 (직접 입력)</option>
+    </select>
+    <input id="r_reason_etc" placeholder="기타 사유를 적어주세요" style="display:none; margin-top:8px;" aria-label="기타 환불 사유" />
+
+    <span class="label" aria-hidden="true" style="display:block;font-size:13px;font-weight:600;margin:12px 0 5px;">말투</span>
+    <div class="tone" role="radiogroup" aria-label="말투">
+      <label><input type="radio" name="r_tone" value="polite" checked /> 정중하게</label>
+      <label><input type="radio" name="r_tone" value="firm" /> 단호하게</label>
+    </div>
+
+    <button class="make" data-make="refund">문구 만들기</button>
+
+    <div class="result" id="res-refund">
+      <h2>📄 보낼 문구</h2>
+      <div class="out" id="out-refund" aria-live="polite" aria-atomic="true"></div>
+      <button class="copy" data-copy="refund">복사하기</button>
+      <div class="notice"><b>안내</b> · 전자상거래법상 단순변심 청약철회는 보통 <b>수령일/결제일로부터 7일</b> 이내이며, 콘텐츠·서비스 종류에 따라 예외가 있습니다. 본 문구는 정보 제공용이며 환불 가능 여부를 단정하지 않습니다.</div>
+    </div>
+  </div>
+
+  <!-- ========== 항의·신고 ========== -->
+  <div class="card pane" id="pane-complain" role="tabpanel" style="display:none;">
+    <label for="x_company">대상 업체명</label>
+    <input id="x_company" placeholder="문제가 된 업체/판매자" />
+
+    <label for="x_type">문제 유형</label>
+    <select id="x_type">
+      <option value="price">가격 속임수 (표시가와 실제가 다름)</option>
+      <option value="penalty">위약금·해지수수료 과다 청구</option>
+      <option value="refuse">정당한 환불 거부</option>
+      <option value="false">허위·과장 광고</option>
+      <option value="breach">계약 내용 불이행</option>
+      <option value="etc">기타 (직접 입력)</option>
+    </select>
+    <input id="x_type_etc" placeholder="기타 문제를 적어주세요" style="display:none; margin-top:8px;" aria-label="기타 문제 유형" />
+
+    <label for="x_detail">무슨 일이 있었나요 <span class="hint">(상황을 간단히)</span></label>
+    <textarea id="x_detail" placeholder="예: 6/1에 결제했는데 표시된 가격보다 2만원 더 청구되었고, 문의해도 답이 없습니다."></textarea>
+
+    <label for="x_want">원하는 해결</label>
+    <select id="x_want">
+      <option value="refund">환불(차액 환급)</option>
+      <option value="fix">시정·정정</option>
+      <option value="apology">사과 및 재발 방지</option>
+      <option value="contract">계약대로 이행</option>
+    </select>
+
+    <label class="check"><input type="checkbox" id="x_official" checked /> 공식 신고 채널 안내(소비자상담센터 1372 등) 함께 넣기</label>
+
+    <span class="label" aria-hidden="true" style="display:block;font-size:13px;font-weight:600;margin:12px 0 5px;">말투</span>
+    <div class="tone" role="radiogroup" aria-label="말투">
+      <label><input type="radio" name="x_tone" value="polite" checked /> 정중하게</label>
+      <label><input type="radio" name="x_tone" value="firm" /> 단호하게</label>
+    </div>
+
+    <button class="make" data-make="complain">문구 만들기</button>
+
+    <div class="result" id="res-complain">
+      <h2>📄 보낼 문구</h2>
+      <div class="out" id="out-complain" aria-live="polite" aria-atomic="true"></div>
+      <button class="copy" data-copy="complain">복사하기</button>
+      <div class="notice"><b>안내</b> · 본 문구는 항의·신고 작성을 돕는 <b>정보 제공용</b>이며 법적 자문이 아닙니다. 분쟁이 해결되지 않으면 <b>1372 소비자상담센터</b> 또는 한국소비자원에 상담할 수 있습니다.</div>
+    </div>
+  </div>
+
+  <!-- ========== 내돈계산기 (참고용) ========== -->
+  <div class="card pane" id="pane-calc" role="tabpanel" style="display:none;">
+    <label for="k_mode">무엇을 계산할까요?</label>
+    <select id="k_mode">
+      <option value="prorate">구독 해지 일할 환불 추정</option>
+      <option value="diff">표시가–실제청구 차액 (가격 속임수)</option>
+      <option value="penalty">위약금 과다 여부 점검</option>
+    </select>
+
+    <div id="k_prorate">
+      <div class="row">
+        <div><label for="k_p_monthly">월 구독료(원)</label><input id="k_p_monthly" inputmode="numeric" placeholder="예: 12000" /></div>
+        <div><label for="k_p_used">이번 달 사용일수</label><input id="k_p_used" inputmode="numeric" placeholder="예: 5" /></div>
+      </div>
+      <div class="hint" style="margin-top:6px;">한 달을 30일로 보고, 아직 안 쓴 날만큼을 환불 추정액으로 계산합니다.</div>
+    </div>
+
+    <div id="k_diff" style="display:none;">
+      <div class="row">
+        <div><label for="k_d_shown">표시/약속 가격(원)</label><input id="k_d_shown" inputmode="numeric" placeholder="예: 9900" /></div>
+        <div><label for="k_d_charged">실제 청구액(원)</label><input id="k_d_charged" inputmode="numeric" placeholder="예: 19900" /></div>
+      </div>
+      <label for="k_d_qty">수량/건수 <span class="hint">(기본 1)</span></label>
+      <input id="k_d_qty" inputmode="numeric" placeholder="1" />
+    </div>
+
+    <div id="k_penalty" style="display:none;">
+      <div class="row">
+        <div><label for="k_x_benefit">받은 혜택/지원금(원)</label><input id="k_x_benefit" inputmode="numeric" placeholder="예: 240000" /></div>
+        <div><label for="k_x_charged">청구된 위약금(원)</label><input id="k_x_charged" inputmode="numeric" placeholder="예: 200000" /></div>
+      </div>
+      <div class="row">
+        <div><label for="k_x_total">약정 개월</label><input id="k_x_total" inputmode="numeric" placeholder="예: 24" /></div>
+        <div><label for="k_x_used">사용한 개월</label><input id="k_x_used" inputmode="numeric" placeholder="예: 6" /></div>
+      </div>
+    </div>
+
+    <button class="make" data-make="calc">계산하기</button>
+
+    <div class="result" id="res-calc">
+      <h2>🧮 계산 결과 (참고용)</h2>
+      <div class="out" id="out-calc" aria-live="polite" aria-atomic="true"></div>
+      <button class="copy" data-copy="calc">결과 복사</button>
+      <div class="notice"><b>주의</b> · 단순 참고용 추정 계산입니다. 실제 환불·위약금 산정 방식은 약관/계약·업종마다 다르므로 <b>금액을 단정하지 않습니다.</b> 정확한 내역은 업체에 산정 근거를 요청하세요.</div>
+    </div>
+  </div>
+
+  <footer>내돈지킴이 · 모든 처리는 기기 내에서만 이뤄집니다 · 정보 제공용 도구</footer>
+</div>
+
+<script>
+  // ---- 탭 전환 ----
+  const tabs = document.querySelectorAll('.tabs button');
+  const panes = {cancel:'pane-cancel', refund:'pane-refund', complain:'pane-complain', calc:'pane-calc'};
+  tabs.forEach(b => b.addEventListener('click', () => {
+    tabs.forEach(x => { x.classList.remove('active'); x.setAttribute('aria-selected', 'false'); });
+    b.classList.add('active'); b.setAttribute('aria-selected', 'true');
+    Object.values(panes).forEach(id => document.getElementById(id).style.display = 'none');
+    document.getElementById(panes[b.dataset.tab]).style.display = 'block';
+  }));
+
+  // ---- 조건부 입력 표시 ----
+  const toggle = (sel, on) => document.querySelector(sel).style.display = on ? '' : 'none';
+  document.getElementById('c_reason').addEventListener('change', e => toggle('#c_reason_etc', e.target.value === 'etc'));
+  document.getElementById('r_reason').addEventListener('change', e => toggle('#r_reason_etc', e.target.value === 'etc'));
+  document.getElementById('x_type').addEventListener('change', e => toggle('#x_type_etc', e.target.value === 'etc'));
+  document.getElementById('c_refund').addEventListener('change', e => toggle('#c_pay_row', e.target.checked));
+
+  const val = id => document.getElementById(id).value.trim();
+  const tone = name => document.querySelector(`input[name="${name}"]:checked`).value;
+
+  // 한글 받침 여부로 조사(을/를, 은/는 등)를 자동 선택. 한글 음절이 아니면 받침 없는 형으로 가정.
+  const josa = (w, withB, withoutB) => {
+    if (!w) return withB;
+    const c = w.charCodeAt(w.length - 1);
+    if (c < 0xAC00 || c > 0xD7A3) return withoutB;
+    return (c - 0xAC00) % 28 !== 0 ? withB : withoutB;
+  };
+
+  const opener = (tone, who) => tone === 'firm'
+    ? `${who} 담당자님께,`
+    : `안녕하세요, ${who} 고객센터 담당자님.`;
+  const closer = tone => tone === 'firm'
+    ? `\n위 사항에 대해 영업일 3일 이내 처리 결과를 회신해 주시기 바랍니다.\n감사합니다.`
+    : `\n번거로우시겠지만 확인 후 처리해 주시면 감사하겠습니다.\n감사합니다.`;
+
+  // ---- 1. 구독 해지 ----
+  function buildCancel(){
+    const service = val('c_service') || '(서비스명)';
+    const account = val('c_account');
+    const name = val('c_name');
+    const t = tone('c_tone');
+    const reasonMap = {
+      no_use:'더 이상 해당 서비스를 이용하지 않아',
+      unaware:'자동결제로 전환되는 것을 인지하지 못한 상태에서 결제가 진행되어',
+      cost:'비용 부담이 커져',
+      etc: (val('c_reason_etc') || '개인 사정으로')
+    };
+    const reason = reasonMap[document.getElementById('c_reason').value];
+
+    let s = opener(t, service) + '\n\n';
+    s += `저는 ${service}${josa(service, '을', '를')} 이용 중인 ` + (name ? `${name}입니다.` : `이용자입니다.`) + '\n';
+    if (account) s += `가입 계정: ${account}\n`;
+    s += `\n${reason} ${service} 구독(정기결제) 해지를 요청드립니다.`;
+    s += ` 해지 처리 후 추가 결제가 발생하지 않도록 확인 부탁드립니다.`;
+
+    if (document.getElementById('c_refund').checked){
+      const d = val('c_date'), a = val('c_amount');
+      s += `\n\n아울러 ` + (d ? `${d}자 ` : '최근 ') + `자동결제분`
+         + (a ? ` ${a}` : '') + `에 대해, 이용 내역을 확인하여 환불 가능 여부를 안내해 주시기 바랍니다.`;
+    }
+    s += '\n' + closer(t);
+    if (name) s += `\n${name} 드림`;
+    return s;
+  }
+
+  // ---- 2. 환불 요청 ----
+  function buildRefund(){
+    const company = val('r_company') || '(업체명)';
+    const item = val('r_item');
+    const date = val('r_date');
+    const amount = val('r_amount');
+    const t = tone('r_tone');
+    const reasonMap = {
+      change:'구매 후 단순 변심으로 이용 의사가 없어졌습니다.',
+      defect:'상품/서비스에 하자 또는 불량이 있어 정상적인 이용이 어렵습니다.',
+      diff:'광고·설명과 실제 상품/서비스 내용이 달랐습니다.',
+      unused:'결제 후 서비스를 전혀 이용하지 않았습니다.',
+      dup:'결제가 중복 또는 잘못 처리되었습니다.',
+      etc: (val('r_reason_etc') || '아래와 같은 사유가 있습니다.')
+    };
+    const reason = reasonMap[document.getElementById('r_reason').value];
+
+    let s = opener(t, company) + '\n\n';
+    s += `아래 결제 건에 대해 환불을 요청드립니다.\n`;
+    s += `· 상품/서비스: ${item || '(내용)'}\n`;
+    if (date) s += `· 결제일: ${date}\n`;
+    if (amount) s += `· 결제금액: ${amount}\n`;
+    s += `\n환불 사유: ${reason}`;
+    s += `\n\n위 사유로 환불을 정식 요청하오니, 환불 가능 여부와 처리 절차를 안내해 주시기 바랍니다.`;
+    if (t === 'firm') s += ` 관련 규정상 환불 대상에 해당한다면 신속히 처리해 주시기 바랍니다.`;
+    s += '\n' + closer(t);
+    return s;
+  }
+
+  // ---- 3. 항의·신고 ----
+  function buildComplain(){
+    const company = val('x_company') || '(업체명)';
+    const detail = val('x_detail');
+    const t = tone('x_tone');
+    const typeMap = {
+      price:'표시된 가격과 실제 청구 금액이 다른 가격 표시 문제',
+      penalty:'과도한 위약금/해지수수료 청구 문제',
+      refuse:'정당한 사유의 환불을 거부당한 문제',
+      false:'허위·과장 광고로 인한 피해',
+      breach:'계약한 내용이 이행되지 않은 문제',
+      etc: (val('x_type_etc') || '아래와 같은 소비자 피해')
+    };
+    const wantMap = {
+      refund:'차액 환급 또는 환불',
+      fix:'잘못된 부분의 시정 및 정정',
+      apology:'공식 사과와 재발 방지 조치',
+      contract:'계약 내용대로의 이행'
+    };
+    const problem = typeMap[document.getElementById('x_type').value];
+    const want = wantMap[document.getElementById('x_want').value];
+
+    let s = opener(t, company) + '\n\n';
+    s += `${company}의 ${problem}에 대해 항의하며 시정을 요청합니다.\n`;
+    if (detail) s += `\n[상황]\n${detail}\n`;
+    s += `\n[요청 사항]\n위 건에 대하여 ${want}${josa(want, '을', '를')} 요청합니다.`;
+    if (t === 'firm') s += ` 정당한 소비자의 권리에 따른 요청이므로 성의 있는 답변과 조치를 기대합니다.`;
+    s += '\n' + closer(t);
+
+    if (document.getElementById('x_official').checked){
+      s += `\n\n---\n※ 원만히 해결되지 않을 경우, 1372 소비자상담센터(국번없이 1372) 또는 한국소비자원(www.kca.go.kr)에 상담·분쟁조정을 신청할 예정입니다.`;
+    }
+    return s;
+  }
+
+  // ---- 4. 내돈계산기 (참고용) ----
+  const numOf = id => { const n = parseFloat((val(id) || '').replace(/[, ]/g, '')); return isNaN(n) ? 0 : n; };
+  const won = n => Math.round(n).toLocaleString('ko-KR') + '원';
+  document.getElementById('k_mode').addEventListener('change', e => {
+    const m = e.target.value;
+    document.getElementById('k_prorate').style.display = m === 'prorate' ? '' : 'none';
+    document.getElementById('k_diff').style.display    = m === 'diff'    ? '' : 'none';
+    document.getElementById('k_penalty').style.display = m === 'penalty' ? '' : 'none';
+  });
+  function buildCalc(){
+    const m = document.getElementById('k_mode').value;
+    if (m === 'prorate'){
+      if (val('k_p_monthly') === '') return `월 구독료를 입력해 주세요.`;
+      if (val('k_p_used') === '') return `이번 달 사용일수를 입력해 주세요. (안 쓴 날만큼 환불 추정)`;
+      const monthly = numOf('k_p_monthly');
+      let used = numOf('k_p_used'); if (used < 0) used = 0; if (used > 30) used = 30;
+      const refund = monthly * (30 - used) / 30;
+      return `월 구독료 ${won(monthly)} 기준\n`
+        + `· 사용 ${used}일분: 약 ${won(monthly * used / 30)}\n`
+        + `· 환불 추정(남은 ${30 - used}일분): 약 ${won(refund)}\n\n`
+        + `→ 해지 시 위 금액(약 ${won(refund)})의 환불을 요청해볼 수 있습니다. (참고용)`;
+    }
+    if (m === 'diff'){
+      if (val('k_d_shown') === '' || val('k_d_charged') === '') return `표시가격과 실제 청구액을 모두 입력해 주세요.`;
+      const shown = numOf('k_d_shown'), charged = numOf('k_d_charged');
+      let qty = numOf('k_d_qty'); if (qty <= 0) qty = 1;
+      const diff = (charged - shown) * qty;
+      if (diff > 0)
+        return `표시가 ${won(shown)} → 실제청구 ${won(charged)} (수량 ${qty})\n`
+          + `· 1건당 차액: ${won(charged - shown)}\n`
+          + `· 총 더 낸 금액: 약 ${won(diff)}\n\n`
+          + `→ 표시가격과 다르게 청구된 사유가 불분명하다면, 차액 ${won(diff)}에 대해 업체에 확인·환급을 요청해 볼 수 있습니다. (참고용)`;
+      return `표시가 ${won(shown)}, 실제청구 ${won(charged)} (수량 ${qty})\n`
+        + `차액이 없거나 표시가보다 적게 청구되었습니다. (차이 ${won(diff)})`;
+    }
+    // penalty
+    if (val('k_x_total') === '') return `약정 개월 수를 입력해 주세요.`;
+    if (val('k_x_benefit') === '') return `받은 혜택/지원금을 입력해 주세요. (위약금 비례 추정 기준)`;
+    if (val('k_x_used') === '') return `사용한 개월 수를 입력해 주세요.`;
+    const benefit = numOf('k_x_benefit'), charged = numOf('k_x_charged');
+    const total = numOf('k_x_total'); let used = numOf('k_x_used');
+    if (total <= 0) return `약정 개월 수를 1 이상으로 입력해 주세요.`;
+    if (used > total) used = total; if (used < 0) used = 0;
+    const remain = total - used;
+    const est = benefit * remain / total;
+    let s = `혜택/지원금 ${won(benefit)}, 약정 ${total}개월 중 ${used}개월 사용 (잔여 ${remain}개월)\n`
+      + `· 잔여기간 비례 추정 위약금: 약 ${won(est)}\n`
+      + `· 실제 청구된 위약금: ${won(charged)}\n\n`;
+    if (charged > est * 1.1) s += `→ 청구액이 비례 추정치보다 많습니다. 업체에 위약금 산정 내역을 요청해 보세요. (참고용)`;
+    else s += `→ 청구액이 비례 추정 범위 안입니다. 다만 산정 방식은 약관에 따라 다릅니다. (참고용)`;
+    return s;
+  }
+
+  const builders = {cancel:buildCancel, refund:buildRefund, complain:buildComplain, calc:buildCalc};
+
+  document.querySelectorAll('[data-make]').forEach(btn => btn.addEventListener('click', () => {
+    const key = btn.dataset.make;
+    const text = builders[key]();
+    document.getElementById('out-' + key).textContent = text;
+    document.getElementById('res-' + key).classList.add('show');
+    document.getElementById('res-' + key).scrollIntoView({behavior:'smooth', block:'nearest'});
+  }));
+
+  // ---- 복사 (성공 여부 확인) ----
+  document.querySelectorAll('[data-copy]').forEach(btn => btn.addEventListener('click', async () => {
+    const key = btn.dataset.copy;
+    const text = document.getElementById('out-' + key).textContent;
+    if (!text) return;
+    let ok = true;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch(e){
+      try {
+        const ta = document.createElement('textarea'); ta.value = text;
+        ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        ok = document.execCommand('copy'); ta.remove();
+      } catch(e2){ ok = false; }
+    }
+    const orig = btn.textContent;
+    btn.textContent = ok ? '✓ 복사됨' : '복사 실패 — 위 글을 길게 눌러 복사하세요';
+    btn.classList.toggle('done', ok);
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('done'); }, 1800);
+  }));
+</script>
+</body>
+</html>
