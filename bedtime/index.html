@@ -75,6 +75,10 @@
   .ctrl.primary{background:var(--accent); color:#1c1338; border-color:var(--accent);}
   .ctrl.speaking{background:var(--ok); color:#0e2b1e; border-color:var(--ok);}
   .ctrl.done{background:var(--ok); color:#0e2b1e; border-color:var(--ok);}
+  .voicebar{display:flex; gap:8px; align-items:center; margin-top:10px; flex-wrap:wrap;}
+  .voicebar label{margin:0; font-size:12px; color:var(--sub); font-weight:600;}
+  .voicebar select{flex:2 1 130px; padding:8px; width:auto; font-size:13px;}
+  .voicebar input[type=range]{flex:1 1 90px; accent-color:var(--accent); width:auto;}
   /* 루틴 */
   .checks{list-style:none; padding:0; margin:6px 0 0;}
   .checks li{margin:0;}
@@ -164,6 +168,17 @@
       </div>
     </div>
 
+    <label for="s_theme">오늘의 놀이 (선택)</label>
+    <select id="s_theme">
+      <option value="random">🎲 그날그날 다르게</option>
+      <option value="stars">⭐ 별 세기</option>
+      <option value="treasure">🐚 보물 찾기</option>
+      <option value="clouds">☁️ 구름 모으기</option>
+      <option value="lantern">🏮 등불 켜기</option>
+      <option value="flowers">🌸 꽃잎 모으기</option>
+      <option value="none">놀이 없이</option>
+    </select>
+
     <span aria-hidden="true" style="display:block;font-size:13px;font-weight:700;margin:14px 0 6px;color:#e7defb;">이야기 길이</span>
     <div class="len" role="radiogroup" aria-label="이야기 길이">
       <label><input type="radio" name="s_len" value="short" /> 짧게</label>
@@ -180,7 +195,13 @@
         <button class="ctrl" id="stopBtn">⏹ 멈춤</button>
         <button class="ctrl" id="copyBtn">복사</button>
       </div>
-      <div class="notice">💜 읽어주기는 기기에 내장된 목소리를 사용해요. 수면 어려움이 오래 이어지면 소아과·전문가와 상담해 주세요. (이 앱은 정보·정서 도움용입니다.)</div>
+      <div class="voicebar" id="voicebar" style="display:none;">
+        <label for="voiceSel">목소리</label>
+        <select id="voiceSel"></select>
+        <label for="rateRange">속도</label>
+        <input id="rateRange" type="range" min="0.7" max="1.05" step="0.05" value="0.82" aria-label="읽어주기 속도" />
+      </div>
+      <div class="notice">💜 읽어주기는 기기 음성을 써요. <b>더 자연스러운 소리</b>를 원하면 설정 → 손쉬운 사용 → 음성(읽어주기 콘텐츠)에서 <b>'고품질 한국어'</b> 음성을 설치한 뒤 위에서 골라 주세요. 수면 어려움이 오래 이어지면 전문가와 상담하세요. (정보·정서 도움용)</div>
     </div>
   </div>
 
@@ -240,24 +261,28 @@
 
   const $ = id => document.getElementById(id);
   const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-  // 받침 여부로 조사 자동 선택
-  const josa = (w, withB, withoutB) => {
-    if (!w) return withB;
-    const c = w.charCodeAt(w.length - 1);
-    if (c < 0xAC00 || c > 0xD7A3) return withoutB;
-    return (c - 0xAC00) % 28 !== 0 ? withB : withoutB;
+  // ---- 한글 조사 자동 처리 (받침에 맞춰 이/가·은/는·을/를·과/와·아/야·(으)로) ----
+  const lastJong = w => { if (!w) return -1; const c = w.charCodeAt(w.length - 1); if (c < 0xAC00 || c > 0xD7A3) return -1; return (c - 0xAC00) % 28; };
+  const pickJosa = (w, key) => {
+    const noB = lastJong(w) <= 0;          // 0: 받침없음, -1: 비한글 → 받침없음 취급
+    switch (key){
+      case '이': return noB ? '가' : '이';
+      case '은': return noB ? '는' : '은';
+      case '을': return noB ? '를' : '을';
+      case '과': return noB ? '와' : '과';
+      case '아': return noB ? '야' : '아';
+      case '으로': { const j = lastJong(w); return (j <= 0 || j === 8) ? '로' : '으로'; }
+      default: return key;                  // 도/만/의/에 등 받침 무관 조사는 그대로
+    }
   };
-  const sub = (t, name, friend, place) => t
-    .replace(/{name이}/g, name + josa(name, '이', '가'))
-    .replace(/{name은}/g, name + josa(name, '은', '는'))
-    .replace(/{name을}/g, name + josa(name, '을', '를'))
-    .replace(/{name아}/g, name + josa(name, '아', '야'))
-    .replace(/{name}/g, name)
-    .replace(/{friend이}/g, friend + josa(friend, '이', '가'))
-    .replace(/{friend은}/g, friend + josa(friend, '은', '는'))
-    .replace(/{friend과}/g, friend + josa(friend, '과', '와'))
-    .replace(/{friend}/g, friend)
-    .replace(/{place}/g, place);
+  const NORM = { '가':'이','는':'은','를':'을','와':'과','야':'아','로':'으로' };
+  // {name}/{friend}/{place} 토큰 치환 + 토큰 바로 뒤 변형 조사를 받침에 맞게 보정
+  const sub = (t, name, friend, place) => {
+    const words = { name, friend, place };
+    return t
+      .replace(/{(name|friend|place)}(으로|로|이|가|은|는|을|를|과|와|아|야)/g, (m, tok, j) => '{' + tok + (NORM[j] || j) + '}')
+      .replace(/{(name|friend|place)([^}]*)}/g, (m, tok, p) => p === '' ? words[tok] : words[tok] + pickJosa(words[tok], p));
+  };
 
   // ---- 이야기 조각들 ----
   const PLACE_IMG = {
@@ -268,38 +293,139 @@
     '별빛 들판':'반짝이는 별빛이 풀잎마다 내려앉은'
   };
   const OPENINGS = [
-    '{name아}, 오늘 하루도 정말 애썼어요. 이제 {friend과} 함께 {placeimg} {place} 쪽으로 살며시 떠나볼까요?',
-    '깊은 밤, {name이} 눈을 감자 {placeimg} {place}의 풍경이 살며시 펼쳐졌어요. 그곳에 {friend이} 방긋 웃으며 기다리고 있었지요.'
+    '{name아}, 오늘도 참 애썼어요. 이제 폭신한 이불 속으로 쏙 들어가서, {friend과} 함께 {placeimg} {place} 쪽으로 가만히 떠나볼까요? 발소리도 작게, 마음도 살살, 우리 같이 가요.',
+    '조용한 밤이 살며시 찾아왔어요. {name이} 눈을 깜빡일 때마다, {friend이} 곁에서 작은 손을 살짝 내밀어요. "{place}로 같이 가자" 하고 소곤소곤 말하는 것 같지요? 자, 천천히 따라가 봐요.',
+    '별빛이 창가에 살짝 내려앉은 밤이에요. {name을} 기다리던 {friend이} 구름처럼 폭신한 길 위에서 손을 흔들어요. {placeimg} {place}로 가는 길은 따뜻하고 보드라워서, 한 걸음마다 마음이 말랑말랑해져요.',
+    '{name아}, 오늘 하루 동안 본 것이 참 많았지요. 이제 그 모든 걸 살며시 내려놓고, {friend과} 손을 잡고 {placeimg} {place} 쪽으로 사뿐사뿐 걸어가 봐요. 서두르지 않아도 괜찮아요.',
+    '잠옷이 {name을} 따뜻하게 감싸 주는 밤이에요. 어디선가 {friend이} 작게 부르는 소리가 들려와요. "우리 {place}에 가볼래?" 하고요. {name이} 고개를 끄덕이자, {placeimg} 보드라운 길이 스르륵 열려요.',
+    '포근한 어둠이 방 안을 살살 감싸요. {name이} 눈을 살짝 감으면, {friend과} 함께 떠날 {placeimg} {place}가 마음속에 동그랗게 떠올라요. 거기엔 무서운 게 하나도 없고, 오직 따뜻함만 가득해요.',
+    '오늘 밤은 바람도 아주 부드럽게 불어요. {name을} 아껴 주는 마음들이 이불처럼 폭 덮어 주는 밤이지요. {friend이} "같이 {place} 구경 가요" 하며 살며시 다가오니, {placeimg} 그 길을 천천히 함께 걸어가 봐요.',
+    '꿈으로 가는 작은 문이 살짝 열렸어요. {name아}, {friend과} 어깨를 나란히 하고 {placeimg} {place} 쪽으로 가만가만 들어가 볼까요? 한 발 한 발 디딜 때마다 졸음이 보드랍게 따라와요.'
   ];
   const MOOD = {
     normal: {
-      scene: '{friend과} {name은} 손을 잡고 천천히 걸었어요. 바람은 보드랍고, 들리는 소리라곤 작은 숨소리뿐이었어요. "오늘 하루는 어땠어?" {friend이} 묻자, {name은} 좋았던 순간들을 하나하나 떠올리며 빙긋 웃었답니다.',
-      comfort: '"평범한 하루가 가장 소중한 거야." {friend이} 속삭였어요. "오늘 {name이} 웃고, 먹고, 뛰어놀았잖아. 그게 바로 행복이란다."'
+      scenes: [
+        '{name아}, 오늘 하루가 어땠는지 {friend과} 가만히 떠올려 봐요. 아침에 마신 따뜻한 우유, 창문으로 살며시 들어온 햇살, 살짝 웃었던 순간들이 작은 별처럼 반짝여요. {friend은} {name이} 곁에 누워 "오늘은 참 포근한 하루였지" 하고 조그맣게 속삭여요.',
+        '{friend이} {name을} 데리고 {place}로 살그머니 걸어가요. 그곳엔 오늘 있었던 작고 좋은 일들이 동그란 조약돌처럼 가만히 놓여 있어요. {name이} 조약돌을 하나씩 주워 주머니에 담으면, 마음이 따뜻한 빛으로 차오르고 눈꺼풀이 살며시 무거워져요.',
+        '{friend과} {name이} 폭신한 구름 이불 위에 나란히 누웠어요. 오늘 웃었던 일, 맛있게 먹었던 간식이 작은 반딧불이가 되어 둥실둥실 떠다녀요. 반딧불이들이 "좋은 하루였어" 하며, 천천히 잠드는 {name이}를 보드랍게 감싸요.',
+        '잠들기 전, {friend은} {name이} 손바닥 위에 오늘 하루를 살짝 올려 줘요. 그건 따뜻하고 동그란 작은 햇살 덩어리예요. {name이} 그 햇살을 가슴에 꼬옥 안으면, 온몸이 노곤해지고 마음이 "행복했어" 하고 조용히 말하며 스르르 잠이 와요.'
+      ],
+      comforts: [
+        '{name아}, 오늘처럼 평범하고 포근한 하루는 마음속에서 가장 오래 빛나는 보물이래요. 특별한 일이 없어도 {name이}가 웃고, 먹고, 푹 쉬었던 그 모든 순간이 참 소중했어요. {friend은} 그런 {name이}의 하루가 자랑스럽고 사랑스러워요.',
+        '작은 행복을 알아챌 줄 아는 마음은 정말 따뜻한 마음이에요. {name이}가 오늘 "좋았어" 하고 느낄 수 있어서 {friend도} 덩달아 마음이 포근해져요. 그 다정한 마음을 안고 이제 편안히 쉬어도 괜찮아요.',
+        '오늘 하루도 {name이}는 충분히 잘 보냈어요. 무언가를 많이 하지 않아도, 그저 {name이}로 하루를 지낸 것만으로 충분히 멋졌어요. 너를 사랑하는 사람들과 {friend이} 늘 곁에서 그 하루를 함께 지켜봤어요.',
+        '이제 눈을 감으면 오늘의 포근함이 그대로 꿈속까지 살며시 따라와요. 좋았던 마음은 사라지지 않고 {name이} 안에서 보드랍게 잠들어요. {friend은} 옆에서 가만히 토닥이며 "잘 자, 또 따뜻한 내일이 올 거야" 하고 속삭여요.'
+      ]
     },
     scared: {
-      scene: '그런데 {name은} 마음 한구석이 조금 무서웠어요. 어두운 곳이 무섭다고 살짝 말하자, {friend이} 따뜻한 손을 꼭 잡아 주었어요. "괜찮아. 어둠은 우리를 폭 안아 주는 포근한 담요 같은 거야." 그러자 어둠 속에서 작은 별빛들이 하나둘 반짝이기 시작했어요.',
-      comfort: '"무서울 땐 숨을 천천히 쉬고, 내가 옆에 있다는 걸 기억해." {friend이} 말했어요. "{name은} 생각보다 훨씬 용감하단다. 그리고 너를 사랑하는 사람들이 늘 가까이에서 지켜 주고 있어." {name은} 마음이 사르르 놓였어요.'
+      scenes: [
+        '밤이 되어 불을 끄면 방이 까매지는 게 조금 무서웠어요. 그때 {friend이} 살금살금 다가와 {name이} 옆에 폭 안겼어요. "어둠은 너를 포근하게 감싸 주는 부드러운 이불 같은 거야." {friend은} 작게 속삭였고, {name은} 그 따뜻한 등을 만지며 마음이 스르르 가라앉았어요.',
+        '{name이} "꿈이 무서우면 어떡하지?" 하고 작게 물었어요. {friend은} 빙긋 웃으며 손가락으로 천장에 작은 별을 그리는 시늉을 했어요. "우리 같이 좋은 꿈 씨앗을 심자. 폭신한 구름이랑, 따뜻한 빵 냄새랑, 너를 사랑하는 사람들의 웃음소리." 그러자 {name은} 그 그림을 마음속에 차곡차곡 담으며 눈을 스르르 감았어요.',
+        '{place}의 창밖으로 바람이 살랑 지나가는 소리가 들렸어요. {name아}, 처음엔 조금 낯선 소리 같았지만 {friend과} 함께 가만히 귀 기울여 보니 그건 나무들이 잎을 흔들며 인사하는 소리였어요. "밤에도 세상은 너를 살며시 지켜 주려고 조용히 깨어 있어." {friend은} 말했고, {name이} 고개를 끄덕이자 마음이 한결 가벼워졌어요.',
+        '{name을} 위해 {friend이} 작은 등불 하나를 켜 주었어요. 그 등불은 무서운 마음이 살짝 들 때마다 더 따뜻하게 빛나는 다정한 빛이었어요. "무서울 땐 이 빛을 가만히 떠올려 봐. 너는 생각보다 훨씬 씩씩하니까." {name은} 가슴속에 작고 따뜻한 등불 하나를 품고서 포근하게 숨을 골랐어요.'
+      ],
+      comforts: [
+        '{name아}, 무서운 마음이 드는 건 하나도 이상한 일이 아니에요. 그건 네 안에 소중한 걸 지키고 싶은 다정한 마음이 살고 있다는 뜻이에요. {friend이} 곁에서 가만히 손을 잡아 줄 테니, 우리 함께 천천히 숨을 쉬어 볼까요.',
+        '어둠은 너를 놀라게 하려는 게 아니라, 하루 동안 열심히 지낸 너를 살며시 쉬게 해 주려고 찾아온 거예요. {friend은} 네 옆에서 따뜻하게 같이 있어 줄 거예요. {name은} 혼자가 아니에요, 지금 이 순간에도 너를 사랑하는 사람들의 온기가 너를 포근히 둘러싸고 있어요.',
+        '무서운 꿈이 찾아와도 괜찮아요. 꿈은 잠깐 스쳐 가는 안개 같은 거라서, 아침이 오면 햇살이 살며시 데려가 버린답니다. {name이} 눈을 감으면 {friend이} 좋은 꿈으로 가는 길을 폭신폭신 깔아 줄 거예요.',
+        '{name아}, 너는 네가 아는 것보다 훨씬 용감한 아이예요. 용기는 무섭지 않은 게 아니라, 조금 무서워도 곁에 있는 사람을 믿고 가만히 쉬어 가는 마음이에요. 오늘 밤은 {friend과} 함께 안심하고, 포근한 잠 속으로 사르르 빠져들어요.'
+      ]
     },
     fight: {
-      scene: '{name은} 낮에 있었던 다툼이 떠올라 마음이 무거웠어요. {friend이} 가만히 이야기를 들어 주었어요. "속상했겠다. 그래도 미운 마음보다 보고 싶은 마음이 더 크지 않아?" {name은} 고개를 가만히 끄덕였어요.',
-      comfort: '"누구나 다툴 수 있어. 중요한 건 다시 손을 잡는 거란다." {friend이} 웃었어요. "내일 아침엔 먼저 미안해라고 말해 볼까? 그 한마디면 마음이 봄눈처럼 사르르 녹을 거야." {name은} 마음이 한결 가벼워졌어요.'
+      scenes: [
+        '오늘은 {name이} 마음에 뾰족한 가시가 콕 박혔던 날이었지요. {friend은} 살며시 곁에 앉아 작은 손을 잡고 말해요. "속상했구나, {name아}. 천천히, 그 마음 같이 꺼내 볼까?" 어두운 방 안이 조금씩 따뜻해져요.',
+        '{friend과} 함께 폭신한 구름 위에 둥실 올라탔어요. 구름은 뾰족했던 말들을 솜사탕처럼 살살 녹여 주었지요. "미안해" 한 마디가 풍선처럼 가볍게 떠오르자, {name이} 마음도 같이 사뿐해졌어요. 둘은 구름을 베고 나란히 누웠답니다.',
+        '캄캄한 밤, {friend이} 작은 등불을 켜고 {name은} 손을 가만히 잡았어요. "다툰 마음은 밤새 푹 쉬면 부드러워진대" 하고 {friend이} 속삭였지요. 둘은 {place}을 느릿느릿 걸으며, 오늘 있었던 일을 별 하나에 하나씩 맡기고 왔어요.',
+        '{name이} 이불 속에서 작은 종이배를 띄웠어요. {friend은} 그 배에 "내일은 다시 웃자"는 글자를 살며시 실어 주었지요. 배는 잔잔한 물결을 따라 흘러가고, {name은} 눈꺼풀이 스르르 무거워졌어요. 모든 게 천천히 잠잠해져요.'
+      ],
+      comforts: [
+        '{name아}, 누군가와 다투면 마음이 콩닥콩닥 아프지요. 그건 {name이} 그 친구를 그만큼 아끼고 있다는 다정한 증거예요. 미운 마음과 좋아하는 마음은 한 이불 속에 같이 잠들 수 있답니다.',
+        '오늘 한 말이 조금 뾰족했어도 괜찮아요, {name아}. 마음은 밤새 푹 자고 나면 동글동글 보드라워져요. 내일 아침엔 "같이 놀자" 한 마디가 새싹처럼 쏙 돋아날 거예요.',
+        '{name이} 화가 났던 건 잘못이 아니에요. 그 마음을 가만히 안아 주는 것만으로 충분하지요. 곁에 있는 사람들도, {friend도} {name은} 변함없이 아껴 주고 있어요, 지금 이 순간에도요.',
+        '이제 어깨에 힘을 스르르 풀고 숨을 길게 내쉬어 봐요. 속상함은 천천히 가라앉고, 따뜻한 졸음이 포근하게 차오를 거예요. {name아}, 푹 자고 일어나면 마음은 다시 말갛게 개어 있을 거예요.'
+      ]
     },
     worry: {
-      scene: '{name은} 내일 있을 새로운 일이 조금 걱정됐어요. 가슴이 콩닥콩닥 뛰었지요. {friend이} 곁에 앉아 말했어요. "걱정이 드는 건, {name이} 그만큼 잘하고 싶어서 그런 거야. 멋진 마음이란다."',
-      comfort: '"새로운 건 누구에게나 조금 떨려. 하지만 {name은} 한 걸음씩 해낼 수 있어." {friend이} 다정하게 말했어요. "잘 안 돼도 괜찮아. 도전했다는 것만으로 넌 이미 멋져." {name은} 가슴이 따뜻해졌어요.'
+      scenes: [
+        '오늘 밤 {name이} 곁에 작은 {friend이} 폭신 다가와 앉았어요. "내일이 살짝 떨리지?" 하고 {friend이} 동그란 목소리로 물었어요. {name아}, 두근두근하는 마음도 여기 와서 같이 앉아도 된다고, {friend은} 가만히 어깨를 토닥여 주었어요.',
+        '{friend과} 함께 {name이} 폭신한 이불 위에 누워, 내일이라는 길을 마음속으로 살짝 걸어 보았어요. 처음 가는 길은 누구나 발끝이 간질간질하대요. {friend이} "내가 옆에서 한 걸음씩 같이 세어 줄게" 하고 속삭이니, 두근거림이 조금 작아졌어요.',
+        '{name이} "잘 못하면 어떡하지" 하고 작게 말하자, {friend이} 동그란 눈으로 가만히 바라보았어요. 그러더니 손바닥에 작은 씨앗 하나를 올려 보여 주었어요. "이 씨앗도 처음엔 아무것도 몰랐지만, 흙 속에서 천천히 작은 싹을 틔웠대" 하고 {place}의 부드러운 이야기를 들려주었어요.',
+        '{name아}, 오늘 {friend과} 함께 마음속에 작은 등불 하나를 켰어요. 내일 어떤 하루가 오더라도 이 등불은 살그머니 너를 비춰 준대요. {friend이} 그 빛을 두 손으로 가만히 감싸 주니, 따뜻한 온기가 {name을} 포근하게 둘러쌌어요.'
+      ],
+      comforts: [
+        '{name아}, 내일을 잘 해내든 조금 서툴든, 너는 변함없이 사랑받는 아이예요. 해 보려는 그 마음 하나만으로 너는 벌써 충분히 용감해요. {friend도}, 너를 사랑하는 사람들도 모두 네 편이랍니다.',
+        '혹시 내일 마음대로 안 되어도 정말 괜찮아요, {name아}. 넘어지는 건 부끄러운 게 아니라, 다시 일어서는 법을 천천히 배우는 시간일 뿐이에요. {friend이} "몇 번이든 같이 일어나 줄게" 하고 네 손을 꼭 잡아 줄 거예요.',
+        '두근거리는 마음은 네가 무언가를 소중히 여긴다는 다정한 신호래요. {name이} 느끼는 그 작은 떨림도 참 예쁜 마음이에요. {friend과} 함께 숨을 천천히 들이쉬고 내쉬면, 그 떨림은 부드러운 용기로 살그머니 바뀐답니다.',
+        '이제 그 걱정은 잠시 내려놓고 푹 쉬어도 돼요, {name아}. 곁에 있는 사람들과 {friend이} 밤새 너를 포근히 지켜 줄 테니까요. 눈을 살며시 감으면 따뜻한 잠이 너를 둥실 감싸고, 내일의 너는 한결 가뿐할 거예요.'
+      ]
     },
     angry: {
-      scene: '{name은} 속상한 마음이 아직 남아 있었어요. {friend이} 조용히 곁을 지켜 주었어요. "화가 났구나. 화는 나쁜 게 아니야. 마음이 힘들다고 보내는 신호일 뿐이란다." 둘은 함께 후—하고 큰 숨을 내쉬었어요.',
-      comfort: '"속상한 마음은 숨을 쉴 때마다 조금씩 작아져." {friend이} 말했어요. "내일은 새 하루가 우리를 기다리고 있어. 오늘의 속상함은 여기 두고, 가벼운 마음으로 잠들자." {name은} 마음이 차분해졌어요.'
+      scenes: [
+        '오늘 마음속에 작고 뜨거운 불씨 하나가 톡 떨어졌어요. {name이} 가슴이 콩닥콩닥 뜨거워질 때, {friend}가 살그머니 옆에 앉았어요. "화가 났구나. 그 마음, 여기 다 와도 돼." 둘은 폭신한 이불 위에 나란히 누워, 뜨거운 불씨가 천천히 작아지는 걸 가만히 바라보았어요.',
+        '속상한 마음이 가슴 안에서 둥둥 떠다닐 때, {friend}가 손을 내밀었어요. "우리 같이 숨을 한 번 크게 쉬어 볼까?" {name은} {friend과} 함께 코로 천천히 들이쉬고, 입으로 후우 길게 내쉬었어요. 그렇게 한 번, 두 번, 세 번 쉴 때마다 무거운 마음이 깃털처럼 살짝 가벼워졌어요.',
+        '화난 마음을 작은 구름이라고 생각해 봐요. {name아}, 그 구름은 나쁜 게 아니에요. {friend}가 가만히 속삭였어요. "구름은 잠시 머물다가 바람을 타고 흘러가는 거예요." 둘은 창밖 어두운 하늘을 보며, 마음속 회색 구름이 천천히 흘러가 별빛에 닿는 걸 떠올렸어요.',
+        '오늘 {name을} 속상하게 한 일을, {friend}는 서두르지 않고 끝까지 들어 주었어요. "그랬구나, 정말 속상했겠다." 그 다정한 한마디에 가슴 한구석이 사르르 녹았어요. {friend과} 함께 따뜻한 담요를 끌어안으니, 뾰족하던 마음이 어느새 동글동글 둥글어졌어요.'
+      ],
+      comforts: [
+        '화나는 건 하나도 나쁜 게 아니에요, {name아}. 마음이 뜨거워지는 건 네 안에 소중한 게 있다는 뜻이거든요. 그러니 그 마음을 숨기지 않아도 괜찮아요. 곁에 있는 사람들은 화난 너도, 웃는 너도 똑같이 사랑한답니다.',
+        '속상한 마음은 숨을 타고 천천히 가라앉아요. 한 번 들이쉬고 길게 후우 내쉬면, 무거운 게 조금씩 빠져나가요. {name이} 그렇게 숨을 고르는 동안 너를 사랑하는 사람들이 가만히 곁을 지켜요. 어느새 마음이 조금 잔잔해졌지요.',
+        '오늘 뾰족했던 마음도 밤이 되면 동글동글 부드러워져요. {name은} 오늘 하루 정말 잘 견뎌 냈어요. 화났던 일은 이불 밖에 살짝 내려놓고, 따뜻한 온기만 품에 안고 자도 돼요. 내일 아침엔 마음이 한결 가벼워져 있을 거예요.',
+        '어떤 마음이 찾아와도 너는 여전히 사랑받는 아이예요, {name아}. 화가 나도, 속상해도, 그 마음은 잠시 머물다 조용히 흘러가요. 곁에 있는 사람들의 따뜻함이 너를 폭신하게 감싸 주니, 이제 눈을 살며시 감고 포근한 잠 속으로 들어가도 괜찮아요.'
+      ]
     },
     miss: {
-      scene: '{name은} 보고 싶은 사람이 떠올라 마음이 몽글몽글했어요. {friend이} 부드럽게 말했어요. "보고 싶다는 건, 그만큼 깊이 사랑한다는 뜻이야." 밤하늘의 별 하나가 {name을} 향해 따뜻하게 반짝였어요.',
-      comfort: '"우리가 같은 달을 바라보는 한, 마음은 늘 이어져 있단다." {friend이} 속삭였어요. "눈을 감으면 그 따뜻한 마음이 {name을} 포근히 감싸 줄 거야." {name은} 포근한 사랑에 폭 감싸였어요.'
+      scenes: [
+        '밤하늘에 별이 하나둘 켜지는 시간, {friend과} 함께 창가에 작은 담요를 깔고 앉았어요. {name이} "저 별을 보면 보고 싶은 마음이 자꾸 커져요" 하고 말하자, {friend은} 가만히 어깨를 기대며 "그 마음은 네가 누군가를 아주 많이 사랑한다는 표시래" 하고 속삭였어요. 두 친구는 별빛이 방 안까지 살그머니 스며드는 걸 바라보며 천천히 눈을 깜빡였어요.',
+        '{friend이} 폭신한 베개 곁에 작은 상자를 하나 가져왔어요. "보고 싶은 마음이 들 때마다 여기에 따뜻한 말을 한 조각씩 넣어 두는 거야" 하고 {friend은} 말했어요. {name이} "오늘은 고마워요, 라고 넣을래요" 하며 두 손을 동그랗게 모으자, 상자 안에서 포근한 빛이 새어 나오는 것 같았고, 두 친구의 눈꺼풀도 사르르 무거워졌어요.',
+        '달빛이 이불 위로 은은하게 내려앉은 밤, {name이} {friend과} 나란히 누워 천장에 둥실 떠다니는 작은 구름을 함께 상상했어요. {name이} "저 구름은 어디까지 흘러갈까요?" 하고 묻자, {friend은} "네 마음의 따뜻함은 바람을 타고 멀리멀리 퍼져 나가" 하고 부드럽게 대답했어요. 구름은 천천히 흘러가고, 방 안에는 솜사탕처럼 보드라운 고요함만 남았어요.',
+        '{friend이} 따뜻한 손바닥을 {name이} 가슴 위에 살며시 올려 주었어요. "여기 콩닥콩닥 뛰는 소리 들리지? 사랑하는 마음은 여기에 안전하게 들어 있어서 사라지지 않아" 하고 {friend은} 조곤조곤 말해 주었어요. {name아}, 그 작은 두근거림에 맞춰 숨을 천천히 쉬다 보니, 어느새 온몸이 따뜻한 이불 속으로 폭 잠기는 기분이 들었어요.'
+      ],
+      comforts: [
+        '보고 싶은 마음이 든다는 건 네 안에 사랑이 가득 차 있다는 뜻이에요. 그 마음은 무겁게 누르는 게 아니라, 너를 사랑하는 사람들이 남겨 둔 따뜻한 온기랍니다. 오늘 밤은 그 온기를 이불처럼 덮고 편안히 쉬어도 괜찮아요.',
+        '{name아}, 누군가가 그리울 때는 가만히 그 이름을 마음속으로 불러 봐도 돼요. 그러면 곁에 있는 사람들의 다정함이 네 둘레를 살며시 감싸 줄 거예요. 너는 지금도 충분히 사랑받고 있고, 그 사랑은 밤새도록 너를 포근히 지켜 줄 거예요.',
+        '그리운 마음은 별빛처럼 멀리 있는 것 같아도, 네 안에서 늘 조용히 반짝이고 있어요. 그 반짝임이 있는 한 너는 결코 혼자가 아니에요. 따뜻한 사람들이 지금 이 순간에도 네 가까이에서 너를 아끼고 있으니까요.',
+        '오늘 보고 싶었던 마음을 잘 안아 준 너는 참 다정한 아이예요. 그 마음을 억지로 밀어내지 않아도 되고, 그냥 가만히 품은 채 잠들면 돼요. 곁에 있는 사람들의 사랑이 너를 살포시 감싸 주니, 이제 눈을 감고 편안히 꿈나라로 가도 괜찮아요.'
+      ]
     }
   };
   const WINDDOWNS = [
-    '이제 {friend이} 나직이 노래를 불러 주었어요. 바람이 잦아들고, {place}도 살며시 잠이 들었어요.\n\n천천히 숨을 들이쉬고… 후— 길게 내쉬어요. 눈꺼풀이 점점 무거워지고, 온몸이 솜처럼 포근해져요.\n\n잘 자요, {name아}. 오늘도 사랑해요. 좋은 꿈 꾸렴. 🌙',
-    '{friend은} {name을} 폭신한 이불처럼 감싸 주었어요. 별빛은 점점 부드러워지고, 세상은 아주 조용해졌어요.\n\n들이쉬고… 내쉬고… 한 번 더 천천히. 마음이 잔잔한 호수처럼 고요해져요.\n\n푹 자요, {name아}. 내일 아침 햇살 속에서 다시 만나요. 좋은 꿈 꿔요. ✨'
+    '{place}의 따뜻한 공기를 천천히 들이마시고, 다시 길게 내쉬어요. {name이} 숨을 쉴 때마다 몸이 점점 말랑해지고, 눈꺼풀이 보드랍게 무거워져요. {friend도} 곁에서 새근새근 잠드는 밤, 푹 자요 {name아}.',
+    '이제 {friend이} {name이} 곁에 살며시 기대어 와요. 숨을 한 번 깊게 들이쉬고, 후우 하고 길게 내보내요. 따뜻한 졸음이 발끝부터 살살 올라와, 어느새 눈이 스르르 감겨요. 잘 자요, {name아}.',
+    '{place}에 부드러운 밤이 내려앉았어요. {name이} 천천히 호흡할 때마다, 마음속 작은 불빛이 포근하게 깜빡여요. 너를 사랑하는 사람들이 가까이 있다는 걸 느끼며, 편안히 잠 속으로 들어가요. 잘 자요, {name아}.',
+    '{name아}, 어깨에 힘을 살며시 풀고 숨을 천천히 쉬어 봐요. 들이쉬고, 내쉬고, 그때마다 졸음이 보드랍게 다가와요. {friend도} 옆에서 곤히 잠들었어요. 따뜻한 이불 속에서 푹 자요.',
+    '오늘 본 따뜻한 것들이 마음속에 동글동글 모여 잠들 채비를 해요. {name이} 숨을 길게 내쉬자, 몸이 구름처럼 가벼워져요. 곁에 있는 사람들의 온기를 느끼며, 스르르 눈을 감아요. 잘 자요, {name아}.',
+    '{friend이} 작은 목소리로 "이제 자요" 하고 속삭여요. {name이} 천천히 숨을 들이쉬고 내쉴 때마다, 별빛도 하나둘 살며시 잦아들어요. 따뜻함만 남은 밤, 졸음에 폭 안겨 푹 자요 {name아}.',
+    '{place}의 보드라운 바람이 {name을} 살살 다독여 줘요. 숨을 한 번, 또 한 번 천천히 쉬면, 눈꺼풀이 사르르 내려와요. 무서운 건 하나도 없고, 오직 안심과 포근함뿐이에요. 잘 자요, {name아}.',
+    '이제 {name이} 손에서 힘이 스르르 풀려요. 숨을 깊게 들이마시고, 길게 내쉬고, 졸음이 따뜻한 담요처럼 온몸을 감싸요. {friend과} 나란히, 너를 아끼는 마음들 곁에서, 편안히 잠들어요. 잘 자요, {name아}.'
+  ];
+
+  // ---- 오늘의 놀이 테마 ----
+  const THEMES = [
+    { key:'stars', label:'⭐ 별 세기', beats:[
+      '{name이} {friend과} {place}에 나란히 누워 하나, 둘, 셋, 반짝이는 별을 천천히 세어 봐요. 숫자가 하나씩 늘어날수록 눈꺼풀이 포근하게 무거워져요.',
+      '{friend이} 작은 손가락으로 가장 큰 별을 가리키면, 그 별이 "안녕" 하듯 살며시 깜빡여요. {name은} 그 빛을 마주 보며 빙긋 웃어요.',
+      '별빛이 보드라운 이불처럼 {name을} 살포시 덮어 줘요. {friend과} 곁에 누워 조용히 숨을 쉬면, 온 세상이 함께 잠들 준비를 해요.'
+    ] },
+    { key:'treasure', label:'🐚 보물 찾기', beats:[
+      '{name이} {friend과} {place}에서 반짝이는 작은 조개껍데기를 하나씩 살며시 주워 모아요. 손바닥 위 보물들이 따뜻한 빛을 내요.',
+      '{friend은} 매끈한 조약돌을, {name은} 동글동글한 조개를 모아 나란히 줄을 세워요. 둘이서 "우와" 하고 작게 소곤거려요.',
+      '찾은 보물을 폭신한 주머니에 살그머니 담고, {name아} 이제 푹 쉬어도 돼요. 보물들도 가만히 잠이 들어요.'
+    ] },
+    { key:'clouds', label:'☁️ 구름 모으기', beats:[
+      '{name이} {friend과} {place}에 앉아 솜사탕처럼 보드라운 구름을 손으로 살살 모아 봐요. 구름이 간질간질 부드럽게 손끝을 스쳐요.',
+      '{friend과} 함께 작은 구름을 동그랗게 굴려 말랑한 베개를 만들어요. {name은} 그 위에 뺨을 살며시 대고 "따뜻해" 하고 속삭여요.',
+      '모은 구름이 {name을} 둥실 감싸 안고 천천히 흔들흔들 흔들어 줘요. 곁에 있는 사람들의 사랑처럼 포근하게 {name이} 스르르 잠겨 들어요.'
+    ] },
+    { key:'lantern', label:'🏮 등불 켜기', beats:[
+      '{name이} {friend과} {place}에서 작은 등불에 노란 불빛을 톡 켜 봐요. 불빛이 "반가워" 하듯 살며시 일렁여요.',
+      '{friend이} 든 등불을 {name이} 나란히 따라가면, 길이 노란빛으로 부드럽게 물들어요. 둘의 그림자가 사이좋게 살랑여요.',
+      '등불을 가만히 내려놓고 {name아} 이제 눈을 감아도 돼요. 따스한 빛이 밤새 {name을} 지켜 주며 곁에 머물러요.'
+    ] },
+    { key:'flowers', label:'🌸 꽃잎 모으기', beats:[
+      '{name이} {friend과} {place}에서 살랑살랑 떨어지는 보드라운 꽃잎을 한 장 한 장 손으로 받아요. 꽃잎에서 은은한 향기가 폴폴 퍼져요.',
+      '{friend과} 모은 꽃잎을 동그란 그릇에 소복이 담고, {name은} 향기를 코로 살며시 들이마셔요. "좋은 냄새" 하고 나직이 웃어요.',
+      '보드라운 꽃잎을 {name이} 가만히 끌어안으면, 향기가 자장가처럼 잔잔히 번져요. {friend과} 나란히 {name이} 사르르 잠 속으로 흘러가요.'
+    ] }
   ];
 
   function buildStory(){
@@ -312,12 +438,17 @@
     const m = MOOD[mood];
 
     const parts = [];
-    parts.push(pick(OPENINGS).replace(/{placeimg}/g, placeimg));
-    if (len === 'normal') parts.push(m.scene);
-    parts.push(m.comfort);
-    parts.push(pick(WINDDOWNS));
+    parts.push(pick(OPENINGS));
+    if (len === 'normal'){
+      parts.push(pick(m.scenes));                 // 오늘 마음에 맞는 장면
+      const tk = $('s_theme') ? $('s_theme').value : 'random';
+      const theme = tk === 'none' ? null : (tk === 'random' ? pick(THEMES) : THEMES.find(x => x.key === tk));
+      if (theme) parts.push(pick(theme.beats));   // 오늘의 놀이 한 장면
+    }
+    parts.push(pick(m.comforts));                 // 위로
+    parts.push(pick(WINDDOWNS));                   // 잠으로
 
-    return sub(parts.join('\n\n'), name, friend, place);
+    return sub(parts.join('\n\n').replace(/{placeimg}/g, placeimg), name, friend, place);
   }
 
   $('makeStory').addEventListener('click', () => {
@@ -327,46 +458,80 @@
     $('storyBox').scrollIntoView({ behavior:'smooth', block:'nearest' });
   });
 
-  // ---- 읽어주기 (기기 내장 음성 우선) ----
-  let koVoice = null, speakWatch = null;
-  function loadVoices(){
+  // ---- 읽어주기 (기기 음성, 문장 단위 자연 재생) ----
+  let speakWatch = null, speakQueue = [], speakIdx = 0, speakOn = false;
+  function koVoices(){
     const vs = window.speechSynthesis ? speechSynthesis.getVoices() : [];
-    // 가능하면 기기 내장(온디바이스) 한국어 음성을 우선 선택, 없으면 일반 한국어 음성
-    koVoice = vs.find(v => (v.lang||'').toLowerCase().startsWith('ko') && v.localService)
-           || vs.find(v => (v.lang||'').toLowerCase().startsWith('ko')) || null;
+    return vs.filter(v => (v.lang || '').toLowerCase().startsWith('ko'));
+  }
+  function fillVoices(){
+    const sel = $('voiceSel'); if (!sel) return;
+    const vs = koVoices();
+    if (!vs.length){ $('voicebar').style.display = 'none'; return; }
+    const prev = sel.value;
+    sel.innerHTML = '';
+    vs.forEach(v => {
+      const o = document.createElement('option');
+      o.value = v.name;
+      o.textContent = v.name + (v.localService ? '' : ' (온라인)');
+      sel.appendChild(o);
+    });
+    // 고품질(Enhanced/Premium/Siri) 음성을 기본 우선, 없으면 기기 내장 음성
+    const pref = vs.find(v => /enhanced|premium|siri|고품질/i.test(v.name))
+              || vs.find(v => v.localService) || vs[0];
+    sel.value = (prev && vs.some(v => v.name === prev)) ? prev : pref.name;
+    $('voicebar').style.display = 'flex';
   }
   if (window.speechSynthesis){
-    loadVoices();
-    speechSynthesis.onvoiceschanged = loadVoices;
+    fillVoices();
+    speechSynthesis.onvoiceschanged = fillVoices;
+  }
+  function pickedVoice(){
+    const name = $('voiceSel') ? $('voiceSel').value : '';
+    return koVoices().find(v => v.name === name) || null;
   }
   function resetSpeakBtn(label){
-    clearTimeout(speakWatch);
+    clearTimeout(speakWatch); speakOn = false;
     $('speakBtn').classList.remove('speaking');
     $('speakBtn').setAttribute('aria-pressed', 'false');
     $('speakBtn').textContent = label;
   }
   function stopSpeak(){
+    speakOn = false; speakQueue = [];
     if (window.speechSynthesis) speechSynthesis.cancel();
     resetSpeakBtn('🔊 읽어주기');
+  }
+  function speakNext(){
+    if (!speakOn) return;
+    if (speakIdx >= speakQueue.length){ resetSpeakBtn('🔊 다시 읽어주기'); return; }
+    const rate = parseFloat($('rateRange') ? $('rateRange').value : '0.82') || 0.82;
+    const u = new SpeechSynthesisUtterance(speakQueue[speakIdx]);
+    u.lang = 'ko-KR'; u.rate = rate; u.pitch = 1.04;
+    const v = pickedVoice(); if (v) u.voice = v;
+    u.onstart = () => clearTimeout(speakWatch);
+    u.onend = () => { speakIdx++; speakWatch = setTimeout(speakNext, 350); }; // 문장 사이 작은 숨
+    u.onerror = () => { speakIdx++; speakNext(); };
+    speechSynthesis.speak(u);
   }
   $('speakBtn').addEventListener('click', () => {
     const text = $('storyText').textContent;
     if (!text) return;
     if (!window.speechSynthesis){ $('speakBtn').textContent = '이 기기는 읽어주기를 지원하지 않아요'; return; }
+    if (speakOn){ stopSpeak(); return; }              // 읽는 중이면 누를 때 멈춤(토글)
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text.replace(/[🌙✨💜]/g,''));
-    u.lang = 'ko-KR'; u.rate = 0.84; u.pitch = 1.06;
-    if (koVoice) u.voice = koVoice;
-    u.onstart = () => clearTimeout(speakWatch);
-    u.onend = () => resetSpeakBtn('🔊 다시 읽어주기');
-    u.onerror = () => resetSpeakBtn('🔊 읽어주기');
+    // 문장 단위로 끊어 자연스러운 호흡 (lookbehind 미사용 — 구형 사파리 호환)
+    speakQueue = text.replace(/[🌙✨💜]/g, '')
+      .replace(/([.?!…])\s+/g, '$1')
+      .split(/[\n]+/).map(s => s.trim()).filter(Boolean);
+    if (!speakQueue.length) return;
+    speakIdx = 0; speakOn = true;
     $('speakBtn').classList.add('speaking');
     $('speakBtn').setAttribute('aria-pressed', 'true');
-    $('speakBtn').textContent = '🔊 읽는 중…';
-    // 일부 환경에서 음성이 조용히 무시되면 버튼이 '읽는 중'으로 고착되지 않도록 안전장치
+    $('speakBtn').textContent = '⏸ 읽는 중 (누르면 멈춤)';
+    // 첫 문장이 조용히 무시되면 버튼 고착 방지
     clearTimeout(speakWatch);
-    speakWatch = setTimeout(() => { if (!speechSynthesis.speaking) resetSpeakBtn('🔊 읽어주기'); }, 2200);
-    speechSynthesis.speak(u);
+    speakWatch = setTimeout(() => { if (speakOn && !speechSynthesis.speaking) stopSpeak(); }, 2500);
+    speakNext();
   });
   $('stopBtn').addEventListener('click', stopSpeak);
   $('copyBtn').addEventListener('click', async () => {
