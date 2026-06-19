@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>오늘 뭐 먹지? — 결정 룰렛</title>
+<style>
+  :root{
+    --bg1:#fff7ed; --bg2:#ffe9d6; --ink:#2a2118; --sub:#8a7560;
+    --card:#ffffff; --line:#f1e2d2; --accent:#ff6b3d; --accent-d:#e8552a; --gold:#f5b62e;
+    --shadow:0 8px 26px rgba(180,90,40,.13);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; color:var(--ink); min-height:100vh;
+    background:radial-gradient(900px 500px at 80% -10%, #ffd9b8 0%, transparent 55%), linear-gradient(160deg,var(--bg1),var(--bg2));
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:520px; margin:0 auto; padding:18px 16px 60px;}
+  .backlink{display:inline-block; margin-bottom:8px; color:var(--sub); font-size:12.5px; text-decoration:none;}
+  .backlink:hover{color:var(--accent);}
+  header h1{font-size:23px; margin:2px 0 2px;}
+  header p{margin:0 0 14px; color:var(--sub); font-size:13.5px;}
+
+  .stage{position:relative; width:100%; max-width:340px; margin:6px auto 4px; aspect-ratio:1/1;}
+  canvas{width:100%; height:100%; display:block;}
+  .pointer{
+    position:absolute; top:-6px; left:50%; transform:translateX(-50%);
+    width:0; height:0; border-left:16px solid transparent; border-right:16px solid transparent;
+    border-top:26px solid var(--accent); filter:drop-shadow(0 2px 3px rgba(0,0,0,.25)); z-index:3;
+  }
+  .hub{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:54px; height:54px; border-radius:50%; background:#fff; border:4px solid var(--accent);
+    display:flex; align-items:center; justify-content:center; font-size:22px; z-index:2; box-shadow:0 3px 8px rgba(0,0,0,.15);
+  }
+
+  .spin{
+    display:block; width:100%; max-width:340px; margin:10px auto 0; padding:16px; border:0; border-radius:16px;
+    background:var(--accent); color:#fff; font-size:19px; font-weight:800; cursor:pointer; box-shadow:var(--shadow);
+    transition:transform .06s;
+  }
+  .spin:active{transform:scale(.98);} .spin:disabled{opacity:.5; cursor:default;}
+
+  .result{
+    display:none; max-width:340px; margin:14px auto 0; text-align:center;
+    background:#fff; border:2px solid var(--gold); border-radius:16px; padding:16px; box-shadow:var(--shadow);
+  }
+  .result.show{display:block; animation:pop .35s ease;}
+  @keyframes pop{from{transform:scale(.8);opacity:0} to{transform:scale(1);opacity:1}}
+  .result .lab{font-size:12.5px; color:var(--sub);}
+  .result .win{font-size:28px; font-weight:900; color:var(--accent-d); margin:4px 0 2px; word-break:keep-all;}
+  .result .again{margin-top:8px; border:1px solid var(--line); background:#fff7f2; color:var(--accent-d); font-weight:700; border-radius:10px; padding:9px 14px; cursor:pointer; font-size:14px;}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:15px; margin-top:16px; box-shadow:var(--shadow);}
+  .card h2{font-size:14px; margin:0 0 8px; color:var(--ink);}
+  .presets{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;}
+  .presets button{
+    border:1px solid var(--line); background:#fff7f2; color:#9a4a26; font-weight:700; font-size:12.5px;
+    border-radius:999px; padding:6px 11px; cursor:pointer;
+  }
+  .presets button:active{background:#ffe6d8;}
+  .addrow{display:flex; gap:8px;}
+  .addrow input{
+    flex:1; padding:11px 12px; border:1px solid var(--line); border-radius:11px; font-size:15px; background:#fffdfb; font-family:inherit;
+  }
+  .addrow input:focus{outline:2px solid #ffd0b8; border-color:var(--accent);}
+  .addrow button{border:0; background:var(--accent); color:#fff; font-weight:800; border-radius:11px; padding:0 16px; cursor:pointer; font-size:16px;}
+  .chips{display:flex; flex-wrap:wrap; gap:7px; margin-top:12px;}
+  .chip{
+    display:inline-flex; align-items:center; gap:6px; background:#fff7f2; border:1px solid var(--line);
+    border-radius:999px; padding:6px 8px 6px 12px; font-size:13.5px; font-weight:600;
+  }
+  .chip b{font-weight:600;}
+  .chip button{border:0; background:#ffd9c8; color:#a23b18; width:20px; height:20px; border-radius:50%; cursor:pointer; font-size:13px; line-height:1;}
+  .meta{display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:12px; color:var(--sub);}
+  .meta button{border:0; background:none; color:var(--sub); text-decoration:underline; cursor:pointer; font-size:12px;}
+  footer{text-align:center; color:#b79c86; font-size:11.5px; margin-top:18px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="backlink" href="../index.html">← 다른 앱 보기</a>
+  <header>
+    <h1>🍽️ 오늘 뭐 먹지?</h1>
+    <p>고민 그만! 후보를 넣고 룰렛을 돌리면 바로 정해드려요.</p>
+  </header>
+
+  <div class="stage">
+    <div class="pointer"></div>
+    <canvas id="wheel" width="680" height="680" aria-label="결정 룰렛"></canvas>
+    <div class="hub">🎯</div>
+  </div>
+
+  <button class="spin" id="spinBtn">돌리기!</button>
+
+  <div class="result" id="result" role="status" aria-live="polite">
+    <div class="lab">오늘은 이거! 🎉</div>
+    <div class="win" id="winText">—</div>
+    <button class="again" id="againBtn">한 번 더 돌리기</button>
+  </div>
+
+  <div class="card">
+    <h2>빠른 후보 담기</h2>
+    <div class="presets" id="presets"></div>
+    <div class="addrow">
+      <input id="addInput" placeholder="직접 추가 (예: 김치찌개)" maxlength="14" />
+      <button id="addBtn" aria-label="추가">＋</button>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div class="meta">
+      <span id="count">0개</span>
+      <button id="clearBtn">전체 지우기</button>
+    </div>
+  </div>
+
+  <footer>결정 룰렛 · 모든 처리는 기기 안에서만 · 재미로 즐기는 도구</footer>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const COLORS = ['#ff8a5c','#ffc24b','#7cc6a6','#6fb1e0','#b79ae0','#f48fb1','#9fd356','#f7a072'];
+  const PRESETS = {
+    '🍚 점심':['한식','중식','일식','분식','양식','샐러드','국밥','덮밥'],
+    '🌙 저녁':['치킨','피자','족발','곱창','회','삼겹살','파스타','마라탕'],
+    '☕ 카페':['아메리카노','라떼','바닐라라떼','녹차','에이드','스무디','핫초코'],
+    '🍢 분식':['떡볶이','김밥','순대','튀김','라면','쫄면','우동'],
+    '🍗 야식':['치킨','족발','피자','떡볶이','곱창','라면','과자'],
+    '🍺 술안주':['치킨','곱창','회','골뱅이','마른안주','전','감자튀김','계란말이'],
+    '✅ 할 일':['공부','운동','청소','산책','낮잠','넷플릭스','게임','독서'],
+    '😜 벌칙':['딱밤','노래 한 곡','애교','다음 계산','심부름','춤추기']
+  };
+
+  let opts = [];
+  try { opts = JSON.parse(localStorage.getItem('roulette_opts') || '[]'); } catch(e){ opts = []; }
+  if (!Array.isArray(opts)) opts = [];
+
+  function save(){ try { localStorage.setItem('roulette_opts', JSON.stringify(opts)); } catch(e){} }
+
+  // ---- 프리셋 버튼 ----
+  const presetsEl = $('presets');
+  Object.keys(PRESETS).forEach(name => {
+    const b = document.createElement('button');
+    b.textContent = name;
+    b.addEventListener('click', () => { opts = PRESETS[name].slice(); afterChange(); });
+    presetsEl.appendChild(b);
+  });
+
+  // ---- 칩 렌더 ----
+  function renderChips(){
+    const c = $('chips'); c.innerHTML = '';
+    opts.forEach((o, i) => {
+      const chip = document.createElement('span'); chip.className = 'chip';
+      const b = document.createElement('b'); b.textContent = o; chip.appendChild(b);
+      const x = document.createElement('button'); x.textContent = '×'; x.setAttribute('aria-label', o + ' 삭제');
+      x.addEventListener('click', () => { opts.splice(i,1); afterChange(); });
+      chip.appendChild(x); c.appendChild(chip);
+    });
+    $('count').textContent = opts.length + '개';
+  }
+
+  function afterChange(){ save(); renderChips(); draw(rot); }
+
+  $('addBtn').addEventListener('click', addOpt);
+  $('addInput').addEventListener('keydown', e => { if (e.key === 'Enter') addOpt(); });
+  function addOpt(){
+    const v = $('addInput').value.trim();
+    if (!v) return;
+    if (opts.length >= 16){ alert('후보는 최대 16개까지예요.'); return; }
+    opts.push(v); $('addInput').value = ''; afterChange();
+  }
+  $('clearBtn').addEventListener('click', () => { if (opts.length && confirm('후보를 모두 지울까요?')){ opts = []; afterChange(); } });
+
+  // ---- 룰렛 그리기 ----
+  const cv = $('wheel'), ctx = cv.getContext('2d');
+  const SIZE = cv.width, R = SIZE/2 - 8, CX = SIZE/2, CY = SIZE/2;
+  let rot = -Math.PI/2;     // 현재 회전
+  let spinning = false;
+
+  function draw(r){
+    ctx.clearRect(0,0,SIZE,SIZE);
+    const n = opts.length;
+    if (n === 0){
+      ctx.beginPath(); ctx.arc(CX,CY,R,0,2*Math.PI); ctx.fillStyle = '#f3e7da'; ctx.fill();
+      ctx.fillStyle = '#b79c86'; ctx.font = '600 30px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('후보를 담아주세요', CX, CY);
+      return;
+    }
+    const ap = 2*Math.PI/n;
+    ctx.save(); ctx.translate(CX,CY); ctx.rotate(r);
+    for (let i=0;i<n;i++){
+      const a0 = i*ap, a1 = (i+1)*ap;
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,R,a0,a1); ctx.closePath();
+      ctx.fillStyle = COLORS[i % COLORS.length]; ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 3; ctx.stroke();
+      // 라벨
+      ctx.save(); ctx.rotate(a0 + ap/2); ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#3a2a1c'; const fs = Math.max(20, Math.min(40, 300/n));
+      ctx.font = '800 ' + fs + 'px -apple-system, sans-serif';
+      let label = opts[i]; if (label.length > 7) label = label.slice(0,6) + '…';
+      ctx.fillText(label, R - 18, 0);
+      ctx.restore();
+    }
+    ctx.restore();
+    // 테두리
+    ctx.beginPath(); ctx.arc(CX,CY,R,0,2*Math.PI); ctx.strokeStyle = '#ff6b3d'; ctx.lineWidth = 6; ctx.stroke();
+  }
+
+  // ---- 돌리기 ----
+  const easeOut = t => 1 - Math.pow(1 - t, 3);
+  $('spinBtn').addEventListener('click', spin);
+  $('againBtn').addEventListener('click', spin);
+  function spin(){
+    if (spinning) return;
+    if (opts.length < 2){ alert('후보를 2개 이상 담아주세요!'); return; }
+    spinning = true; $('spinBtn').disabled = true; $('result').classList.remove('show');
+    const n = opts.length, ap = 2*Math.PI/n;
+    const winner = Math.floor(Math.random() * n);
+    // 당첨 칸 중앙이 포인터(맨 위 = -90°)에 오도록
+    const center = winner*ap + ap/2;
+    const turns = 5 + Math.floor(Math.random()*3);
+    const target = (-Math.PI/2) - center + turns*2*Math.PI;
+    const start = rot, dist = target - start, dur = 4200, t0 = performance.now();
+    function frame(now){
+      const t = Math.min(1, (now - t0)/dur);
+      rot = start + dist * easeOut(t);
+      draw(rot);
+      if (t < 1){ requestAnimationFrame(frame); }
+      else {
+        rot = ((target % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+        draw(rot); spinning = false; $('spinBtn').disabled = false;
+        $('winText').textContent = opts[winner];
+        $('result').classList.add('show');
+        $('result').scrollIntoView({behavior:'smooth', block:'nearest'});
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // ---- 초기 ----
+  if (opts.length === 0) opts = PRESETS['🍚 점심'].slice();
+  renderChips(); draw(rot);
+</script>
+</body>
+</html>
