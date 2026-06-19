@@ -86,6 +86,7 @@
     <h1>🍽️ 오늘 뭐 먹지?</h1>
     <p>고민 그만! 후보를 넣고 룰렛을 돌리면 바로 정해드려요.</p>
   </header>
+  <div style="background:#fff7f2;border:1px solid #f1e2d2;border-radius:11px;padding:8px 11px;font-size:12.5px;color:#9a4a26;margin-bottom:12px;">💡 예시 후보가 담겨 있어요 — 바로 <b>돌리기!</b> 하거나, 아래 빠른 프리셋·직접 추가로 후보를 바꿔보세요.</div>
 
   <div class="stage">
     <div class="pointer"></div>
@@ -143,7 +144,7 @@
   Object.keys(PRESETS).forEach(name => {
     const b = document.createElement('button');
     b.textContent = name;
-    b.addEventListener('click', () => { opts = PRESETS[name].slice(); afterChange(); });
+    b.addEventListener('click', () => { if (spinning) return; PRESETS[name].forEach(o => { if (!opts.includes(o) && opts.length < 16) opts.push(o); }); afterChange(); });
     presetsEl.appendChild(b);
   });
 
@@ -154,23 +155,25 @@
       const chip = document.createElement('span'); chip.className = 'chip';
       const b = document.createElement('b'); b.textContent = o; chip.appendChild(b);
       const x = document.createElement('button'); x.textContent = '×'; x.setAttribute('aria-label', o + ' 삭제');
-      x.addEventListener('click', () => { opts.splice(i,1); afterChange(); });
+      x.addEventListener('click', () => { if (spinning) return; opts.splice(i,1); afterChange(); });
       chip.appendChild(x); c.appendChild(chip);
     });
     $('count').textContent = opts.length + '개';
   }
 
-  function afterChange(){ save(); renderChips(); draw(rot); }
+  function afterChange(){ save(); renderChips(); draw(rot); $('result').classList.remove('show'); }
 
   $('addBtn').addEventListener('click', addOpt);
   $('addInput').addEventListener('keydown', e => { if (e.key === 'Enter') addOpt(); });
   function addOpt(){
+    if (spinning) return;
     const v = $('addInput').value.trim();
     if (!v) return;
+    if (opts.includes(v)){ $('addInput').value = ''; return; }   // 중복 방지
     if (opts.length >= 16){ alert('후보는 최대 16개까지예요.'); return; }
     opts.push(v); $('addInput').value = ''; afterChange();
   }
-  $('clearBtn').addEventListener('click', () => { if (opts.length && confirm('후보를 모두 지울까요?')){ opts = []; afterChange(); } });
+  $('clearBtn').addEventListener('click', () => { if (spinning) return; if (opts.length && confirm('후보를 모두 지울까요?')){ opts = []; afterChange(); } });
 
   // ---- 룰렛 그리기 ----
   const cv = $('wheel'), ctx = cv.getContext('2d');
@@ -215,7 +218,8 @@
     if (spinning) return;
     if (opts.length < 2){ alert('후보를 2개 이상 담아주세요!'); return; }
     spinning = true; $('spinBtn').disabled = true; $('result').classList.remove('show');
-    const n = opts.length, ap = 2*Math.PI/n;
+    const items = opts.slice();              // 도는 중 후보가 바뀌어도 안전하도록 스냅샷
+    const n = items.length, ap = 2*Math.PI/n;
     const winner = Math.floor(Math.random() * n);
     // 당첨 칸 중앙이 포인터(맨 위 = -90°)에 오도록
     const center = winner*ap + ap/2;
@@ -230,9 +234,9 @@
       else {
         rot = ((target % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
         draw(rot); spinning = false; $('spinBtn').disabled = false;
-        $('winText').textContent = opts[winner];
+        $('winText').textContent = items[winner];
         $('result').classList.add('show');
-        $('result').scrollIntoView({behavior:'smooth', block:'nearest'});
+        $('result').scrollIntoView({behavior:'smooth', block:'center'});
       }
     }
     requestAnimationFrame(frame);

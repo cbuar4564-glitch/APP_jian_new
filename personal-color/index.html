@@ -77,7 +77,7 @@
     <label class="uploadbtn" for="file">
       <span class="big">📸</span>
       셀카 올리기
-      <small>자연광에서 화장기 적은 얼굴 사진이 가장 정확해요</small>
+      <small>갤러리에서 고르거나 새로 촬영해도 돼요 · 자연광·화장기 적은 사진이 정확해요</small>
     </label>
     <input type="file" id="file" accept="image/*" />
   </div>
@@ -85,7 +85,7 @@
   <!-- 분석 -->
   <div class="card analyzer" id="analyzer">
     <div class="canvaswrap"><canvas id="photo"></canvas></div>
-    <p class="hint">👆 <b>볼(뺨)</b>을 톡 누르면 그 색으로 다시 분석해요</p>
+    <p class="hint">처음엔 자동 추정이에요. 👆 <b>볼(뺨)</b>을 직접 톡 누르면 더 정확해요 · 조명에 따라 결과가 달라져요</p>
     <div class="swatchrow">분석한 피부색 <span class="sw" id="swatch"></span></div>
     <button class="retake" id="retake">다른 사진으로</button>
   </div>
@@ -144,7 +144,8 @@
     const [h,s,l] = rgbToHsl(r,g,b);
     const lum = 0.299*r + 0.587*g + 0.114*b;
     // 웜/쿨: 노란기(웜) vs 붉은·푸른기(쿨). 색상(hue)이 황금빛 범위거나 R-B 차가 크면 웜.
-    const warm = (h >= 25 && h <= 55) || (r - b) > 48;
+    const warmIndex = 2*g - r - b;          // 노란기(웜) vs 붉은·푸른기(쿨) — 피부에 더 안정적인 지표
+    const warm = warmIndex >= -15;
     // 밝기(라이트/딥)
     const light = lum >= 150;
     let key;
@@ -184,7 +185,7 @@
       $('uploadCard').style.display = 'none';
       $('analyzer').classList.add('show');
       // 초기 자동 분석: 중앙 약간 아래(보통 얼굴/볼 위치)
-      sampleAt(cv.width/2, cv.height*0.55);
+      sampleAt(cv.width/2, cv.height*0.55, false);
       URL.revokeObjectURL(url);
     };
     im.onerror = () => alert('사진을 열 수 없어요. 다른 사진을 시도해 주세요.');
@@ -197,9 +198,9 @@
     const py = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
     return [Math.round(px * cv.width / rect.width), Math.round(py * cv.height / rect.height)];
   }
-  cv.addEventListener('click', e => { const [x,y] = clickToCanvas(e); sampleAt(x,y); });
+  cv.addEventListener('click', e => { const [x,y] = clickToCanvas(e); sampleAt(x,y,true); });
 
-  function sampleAt(x, y){
+  function sampleAt(x, y, userTap){
     if (!imgEl) return;
     const rr = Math.max(8, Math.round(cv.width * 0.04));
     const sx = Math.max(0, x-rr), sy = Math.max(0, y-rr);
@@ -223,10 +224,10 @@
     lastSkin = [r,g,b];
     $('swatch').style.background = `rgb(${r},${g},${b})`;
     drawBase(x, y);
-    showResult(r,g,b);
+    showResult(r,g,b, userTap);
   }
 
-  function showResult(r,g,b){
+  function showResult(r,g,b, scroll){
     const a = analyze(r,g,b);
     lastResult = a;
     const s = SEASONS[a.key];
@@ -243,6 +244,7 @@
     $('tips').textContent = s.tips;
     $('avoid').innerHTML = '<b>피하면 좋은 색:</b> ' + s.avoid;
     $('result').classList.add('show');
+    if (scroll) $('result').scrollIntoView({ behavior:'smooth', block:'nearest' });
     try { localStorage.setItem('pc_last', JSON.stringify({ key:a.key, skin:[r,g,b] })); } catch(e){}
   }
 

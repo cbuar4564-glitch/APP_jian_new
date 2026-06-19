@@ -89,6 +89,7 @@
   </header>
 
   <div class="privacy">🔒 입력하신 내용은 <b>이 기기 안에서만</b> 처리되며 어디에도 전송·저장되지 않습니다.</div>
+  <div class="privacy" style="background:#fffaf0;border-color:#fde7c0;color:#8a5a16;">💡 <b>상황에 맞는 탭</b>을 고르세요 — 끊고 싶으면 <b>구독해지</b>, 돈 돌려받기 <b>환불요청</b>, 따질 땐 <b>항의·신고</b>, 금액 궁금하면 <b>내돈계산</b>. 만든 문구를 복사해 고객센터에 붙여넣어 보내면 돼요.</div>
 
   <div class="tabs" role="tablist" aria-label="기능 선택">
     <button data-tab="cancel" class="active" role="tab" aria-selected="true" aria-controls="pane-cancel">구독해지</button>
@@ -410,7 +411,7 @@
   }
 
   // ---- 4. 내돈계산기 (참고용) ----
-  const numOf = id => { const n = parseFloat((val(id) || '').replace(/[, ]/g, '')); return isNaN(n) ? 0 : n; };
+  const numOf = id => { const n = parseFloat((val(id) || '').replace(/[^0-9.]/g, '')); return isNaN(n) ? 0 : n; }; // '12,000원','월 9900' 등 단위·글자 섞여도 숫자만 추출
   const won = n => Math.round(n).toLocaleString('ko-KR') + '원';
   document.getElementById('k_mode').addEventListener('change', e => {
     const m = e.target.value;
@@ -448,6 +449,7 @@
     if (val('k_x_total') === '') return `약정 개월 수를 입력해 주세요.`;
     if (val('k_x_benefit') === '') return `받은 혜택/지원금을 입력해 주세요. (위약금 비례 추정 기준)`;
     if (val('k_x_used') === '') return `사용한 개월 수를 입력해 주세요.`;
+    if (val('k_x_charged') === '') return `청구된 위약금을 입력해 주세요.`;
     const benefit = numOf('k_x_benefit'), charged = numOf('k_x_charged');
     const total = numOf('k_x_total'); let used = numOf('k_x_used');
     if (total <= 0) return `약정 개월 수를 1 이상으로 입력해 주세요.`;
