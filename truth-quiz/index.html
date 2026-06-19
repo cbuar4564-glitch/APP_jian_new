@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>진짜야? — 생활 상식 오해 퀴즈</title>
+<title>퀴즈 한 입 — 골라 푸는 상식·공부 퀴즈</title>
 <style>
   :root{
     --bg1:#f0fbf8; --bg2:#e2f5ef; --ink:#15302a; --sub:#5f7d74; --card:#ffffff;
@@ -23,6 +23,20 @@
   header h1{font-size:23px; margin:2px 0 2px;}
   header p{margin:0 0 14px; color:var(--sub); font-size:13.5px;}
 
+  /* 허브(주제 선택) */
+  .packs{display:grid; grid-template-columns:1fr 1fr; gap:11px;}
+  .pack{
+    background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px 14px; cursor:pointer;
+    box-shadow:var(--shadow); transition:.13s; text-align:left;
+  }
+  .pack:active{transform:scale(.98);}
+  .pack.soon{opacity:.55; cursor:default;}
+  .pack .pe{font-size:30px;}
+  .pack h3{margin:8px 0 2px; font-size:16px;}
+  .pack .ps{font-size:12px; color:var(--sub);}
+  .pack .pc{display:inline-block; margin-top:8px; font-size:11px; font-weight:800; color:var(--accent-d); background:#e3f7f0; border-radius:999px; padding:3px 9px;}
+  .pack.soon .pc{color:#9b8; background:#eef4f1;}
+
   .progress{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
   .bar{flex:1; height:9px; background:#d6ece4; border-radius:99px; overflow:hidden;}
   .bar > div{height:100%; width:0; background:linear-gradient(90deg,var(--accent),var(--gold)); transition:width .3s;}
@@ -30,198 +44,319 @@
 
   .card{background:var(--card); border:1px solid var(--line); border-radius:20px; padding:22px 18px; box-shadow:var(--shadow); text-align:center;}
   .cat{display:inline-block; font-size:11.5px; font-weight:800; color:var(--accent-d); background:#e3f7f0; border-radius:999px; padding:4px 11px; margin-bottom:14px;}
-  .stmt{font-size:21px; font-weight:800; line-height:1.5; min-height:80px; display:flex; align-items:center; justify-content:center; word-break:keep-all;}
+  .stmt{font-size:21px; font-weight:800; line-height:1.5; min-height:72px; display:flex; align-items:center; justify-content:center; word-break:keep-all;}
   .ask{font-size:13px; color:var(--sub); margin:6px 0 16px;}
   .choices{display:flex; gap:10px;}
+  .choices.col{flex-direction:column;}
   .choices button{
-    flex:1; padding:18px 8px; border:2px solid var(--line); background:#fff; border-radius:16px;
-    font-size:18px; font-weight:900; cursor:pointer; transition:.12s;
+    flex:1; padding:16px 10px; border:2px solid var(--line); background:#fff; border-radius:14px;
+    font-size:16px; font-weight:800; cursor:pointer; transition:.12s; color:var(--ink);
   }
+  .choices.row button{font-size:18px; font-weight:900;}
   .choices .real{color:var(--o);} .choices .fake{color:var(--x);}
-  .choices button:active{transform:scale(.97);}
-  .choices button:disabled{opacity:.45; cursor:default;}
+  .choices button:active{transform:scale(.98);}
+  .choices button:disabled{cursor:default;}
+  .choices button.correct{border-color:var(--accent); background:#eafaf4; color:var(--accent-d);}
+  .choices button.wrong{border-color:var(--x); background:#fdeeec; color:var(--x);}
 
   .reveal{display:none; margin-top:16px;}
   .reveal.show{display:block; animation:pop .3s ease;}
   @keyframes pop{from{transform:translateY(8px);opacity:0} to{transform:translateY(0);opacity:1}}
-  .verdict{font-size:22px; font-weight:900; margin-bottom:6px;}
+  .verdict{font-size:21px; font-weight:900; margin-bottom:6px;}
   .verdict.ok{color:var(--o);} .verdict.no{color:var(--x);}
   .truth{font-size:14.5px; color:#33514a; background:#f3faf7; border:1px solid var(--line); border-radius:12px; padding:13px; text-align:left;}
   .next{margin-top:12px; width:100%; padding:14px; border:0; border-radius:14px; background:var(--accent); color:#fff; font-size:16px; font-weight:800; cursor:pointer;}
   .next:active{background:var(--accent-d);}
 
-  .result{display:none; text-align:center;}
-  .result.show{display:block;}
+  .result{text-align:center;}
   .result .big{font-size:54px; font-weight:900; color:var(--accent-d); margin:6px 0 0;}
   .result .msg{font-size:16px; font-weight:800; margin:4px 0 2px;}
   .result .sub{font-size:13.5px; color:var(--sub); margin-bottom:16px;}
   .result .row{display:flex; gap:10px;}
-  .result .row button{flex:1; padding:13px; border-radius:13px; font-weight:800; font-size:14.5px; cursor:pointer;}
-  .share{border:0; background:var(--accent); color:#fff;} .share.done{background:var(--gold); color:#3a2a00;}
-  .again{border:1px solid var(--line); background:#fff; color:var(--accent-d);}
+  .result .row button{flex:1; padding:13px; border-radius:13px; font-weight:800; font-size:14px; cursor:pointer; border:1px solid var(--line);}
+  .share{border:0 !important; background:var(--accent); color:#fff;} .share.done{background:var(--gold); color:#3a2a00;}
+  .again{background:#fff; color:var(--accent-d);}
+  .home{background:#f3faf7; color:var(--sub);}
 
   .notice{margin-top:16px; background:#fff8ec; border:1px solid #fde7c0; color:#8a5a16; font-size:12px; border-radius:12px; padding:10px 12px;}
   footer{text-align:center; color:#9bb8af; font-size:11.5px; margin-top:16px;}
-  .promo{display:block; text-align:center; margin-top:8px; font-size:12.5px; color:var(--accent-d); text-decoration:none; font-weight:700;}
+  .hide{display:none;}
 </style>
 </head>
 <body>
 <div class="wrap">
   <a class="backlink" href="../index.html">← 다른 앱 보기</a>
   <header>
-    <h1>❓ 진짜야?</h1>
-    <p>다들 맞다고 믿는 생활 상식, 진짜일까 가짜일까? 맞혀보세요.</p>
+    <h1 id="title">🧠 퀴즈 한 입</h1>
+    <p id="subtitle">골라 푸는 상식·공부 퀴즈 — 맞혀보고 친구한테 공유!</p>
   </header>
 
+  <!-- 허브: 주제 선택 -->
+  <div id="hub"><div class="packs" id="packs"></div>
+    <div class="notice">💡 재미·참고용이에요. 건강·의학·육아 관련은 전문가와 상담하세요.</div>
+  </div>
+
   <!-- 퀴즈 -->
-  <div id="quiz">
+  <div id="quiz" class="hide">
     <div class="progress"><div class="bar"><div id="barFill"></div></div><span class="pcount" id="pcount">1 / 10</span></div>
     <div class="card">
       <span class="cat" id="cat">생활</span>
       <div class="stmt" id="stmt">—</div>
-      <div class="ask">이 말, 진짜일까요 가짜일까요?</div>
-      <div class="choices">
-        <button class="real" id="btnReal">⭕ 진짜</button>
-        <button class="fake" id="btnFake">❌ 가짜</button>
-      </div>
+      <div class="ask" id="ask">이 말, 진짜일까요 가짜일까요?</div>
+      <div class="choices" id="choices"></div>
       <div class="reveal" id="reveal">
         <div class="verdict" id="verdict">—</div>
         <div class="truth" id="truth"></div>
         <button class="next" id="nextBtn">다음 →</button>
       </div>
     </div>
-    <div class="notice">💡 재미·참고용 상식이에요. 건강·의학 관련은 전문가·약사와 상담하세요.</div>
   </div>
 
   <!-- 결과 -->
-  <div class="card result" id="result">
-    <div class="msg" id="rmsg">결과</div>
-    <div class="big" id="rscore">0/10</div>
-    <div class="sub" id="rsub"></div>
-    <div class="row">
-      <button class="share" id="shareBtn">결과 공유 📋</button>
-      <button class="again" id="againBtn">다시 풀기</button>
+  <div id="resultWrap" class="hide">
+    <div class="card result" id="result">
+      <div class="msg" id="rmsg">결과</div>
+      <div class="big" id="rscore">0/10</div>
+      <div class="sub" id="rsub"></div>
+      <div class="row">
+        <button class="share" id="shareBtn">결과 공유 📋</button>
+        <button class="again" id="againBtn">다시 풀기</button>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button class="home" id="homeBtn">← 다른 퀴즈 고르기</button>
+      </div>
     </div>
   </div>
 
-  <a class="promo" href="#" id="promo" style="display:none;">🎬 더 자세한 이야기는 유튜브에서</a>
-  <footer>진짜야? · 모든 처리는 기기 안에서만 · 재미·참고용</footer>
+  <footer>퀴즈 한 입 · 모든 처리는 기기 안에서만 · 재미·참고용</footer>
 </div>
 
 <script>
   const $ = id => document.getElementById(id);
+  const BASE = 'https://cbuar4564-glitch.github.io/APP_jian_new/truth-quiz/';
 
-  // ── 카드 덱 (검증된 생활 상식 오해 카드) ──
-  const CARDS = [
-    // 청소·생활
-    { stmt:'거품이 풍성하게 많이 날수록 더 깨끗하게 닦인다', isTrue:false, cat:'청소·생활', truth:'거품의 양과 세척력은 관계가 없어요. 때를 떼는 건 세정 성분과 문지르는 힘이고, 거품을 거의 안 내는 세제도 잘 닦여요.' },
-    { stmt:'락스와 식초를 섞으면 더 강력한 청소 효과가 난다', isTrue:false, cat:'청소·생활', truth:'두 가지를 섞으면 유독한 염소 가스가 나와 위험해요. 효과가 좋아지긴커녕 호흡기에 해로우니 절대 섞지 마세요.' },
-    { stmt:'세제는 권장량보다 많이 넣을수록 빨래가 더 깨끗해진다', isTrue:false, cat:'청소·생활', truth:'많이 넣으면 헹굼으로 다 빠지지 않아 옷·세탁기에 잔여물이 남아요. 냄새·피부자극의 원인이 될 수 있어요.' },
-    { stmt:'뜨거운 물로 손을 씻어야 세균이 더 잘 제거된다', isTrue:false, cat:'청소·생활', truth:'사람이 견디는 온도로는 세균이 안 죽어요. 중요한 건 온도가 아니라 비누로 20초 이상 충분히 문질러 헹구는 거예요.' },
-    { stmt:'주방 행주·수세미가 화장실 변기보다 세균이 더 많을 수 있다', isTrue:true, cat:'청소·생활', truth:'진짜예요. 젖어 있고 음식 찌꺼기가 남아 세균 번식에 최적이라, 변기보다 더 많이 검출되기도 해요. 자주 삶거나 바꿔주세요.' },
-    { stmt:'베이킹소다와 식초를 섞으면 강력한 만능 세정제가 된다', isTrue:false, cat:'청소·생활', truth:'둘을 섞으면 산-염기 중화로 효과가 서로 상쇄돼 세정력이 세지지 않아요. 보글거림은 이산화탄소가 빠지는 반응일 뿐이에요.' },
-    // 건강·몸
-    { stmt:'손가락 관절을 꺾어 "뚝" 소리를 내면 관절염에 걸린다', isTrue:false, cat:'건강·몸', truth:'그 소리는 관절액 속 기포가 터지는 거예요. 관절염을 일으킨다는 근거는 약해요(무리하게 꺾는 습관은 비권장).' },
-    { stmt:'사람은 평소 뇌의 10%만 사용한다', isTrue:false, cat:'건강·몸', truth:'뇌 영상 연구에서 하루 중 거의 모든 영역이 활동해요. "10%만 쓴다"는 유명한 속설이에요.' },
-    { stmt:'어두운 곳에서 책을 읽으면 시력이 영구적으로 나빠진다', isTrue:false, cat:'건강·몸', truth:'눈이 피로하고 일시적으로 불편할 수 있지만, 그 자체가 시력을 영구히 망친다는 근거는 약해요.' },
-    { stmt:'성인의 정상 체온은 항상 정확히 36.5도다', isTrue:false, cat:'건강·몸', truth:'정상 체온은 사람·시간·부위에 따라 36~37.5도로 달라요. 36.5도는 평균에 가까운 값일 뿐이에요.' },
-    { stmt:'위(胃) 안쪽 점막은 며칠 단위로 계속 새것으로 교체된다', isTrue:true, cat:'건강·몸', truth:'맞아요. 위 점막 세포는 강한 위산에 노출돼 빠르게 손상되고, 대체로 며칠 주기로 새 세포로 교체돼요.' },
-    { stmt:'감기에는 항생제가 잘 듣는다', isTrue:false, cat:'건강·몸', truth:'감기는 대부분 바이러스 때문이고 항생제는 세균에만 들어요. (복용은 전문가 안내에 따르세요)' },
-    { stmt:'면도를 하면 털이 더 굵고 검게 자란다', isTrue:false, cat:'건강·몸', truth:'굵어 보이는 건 잘린 단면 때문이에요. 실제 털의 굵기나 색은 면도로 바뀌지 않아요.' },
-    { stmt:'물은 누구나 하루에 꼭 2리터를 마셔야 한다', isTrue:false, cat:'건강·몸', truth:'정해진 양은 없어요. 음식·활동량·개인차에 따라 필요한 수분량이 달라요.' },
-    // 음식·영양
-    { stmt:'MSG(글루타민산나트륨)는 몸에 해로워 먹으면 두통이 생긴다', isTrue:false, cat:'음식', truth:'MSG는 다시마·토마토·치즈에도 든 감칠맛 성분으로, 보통 조미량에서 해롭다는 근거는 없어요. "중국집 증후군"도 재현 연구에서 입증되지 못했어요.' },
-    { stmt:'갈색 설탕(흑설탕)은 흰 설탕보다 훨씬 건강에 좋다', isTrue:false, cat:'음식', truth:'흑설탕은 흰 설탕에 당밀을 약간 더한 것일 뿐 영양 차이는 거의 없어요. 칼로리·혈당 영향도 비슷해요.' },
-    { stmt:'당근을 많이 먹으면 피부가 주황빛으로 변할 수 있다', isTrue:true, cat:'음식', truth:'진짜예요. 베타카로틴을 과다 섭취하면 피부가 주황빛이 도는 "카로틴혈증"이 생길 수 있어요. 대체로 무해하고 줄이면 돌아와요.' },
-    { stmt:'유통기한이 지난 식품은 그 날짜가 지나면 바로 먹으면 안 된다', isTrue:false, cat:'음식', truth:'유통기한은 "판매 가능 기한"이라 보관만 잘하면 그 뒤로도 먹을 수 있는 경우가 많아요. 실제 기준은 "소비기한"에 가까워요.' },
-    { stmt:'꿀은 상온에서 거의 상하지 않고 아주 오래 보관할 수 있다', isTrue:true, cat:'음식', truth:'맞아요. 꿀은 수분이 적고 천연 산성이라 세균이 잘 못 자라 밀봉하면 오래가요. 단 만 1세 미만 아기에겐 주지 마세요(보툴리눔균).' },
-    // 과학·자연
-    { stmt:'박쥐는 눈이 멀어서 아무것도 못 본다', isTrue:false, cat:'과학·자연', truth:'박쥐는 대부분 눈이 있고 볼 수 있어요. 어두운 곳에선 초음파를 함께 쓸 뿐, 시력이 아예 없는 건 아니에요.' },
-    { stmt:'금붕어의 기억력은 3초밖에 안 된다', isTrue:false, cat:'과학·자연', truth:'금붕어는 몇 달까지 기억한다는 연구가 여럿 있어요. 먹이 시간이나 미로 길을 학습해 기억해요.' },
-    { stmt:'낙타의 혹에는 물이 들어 있다', isTrue:false, cat:'과학·자연', truth:'혹에는 물이 아니라 주로 지방이 저장돼 있어요. 이 지방을 에너지로 쓰며 일부 물도 만들어져요.' },
-    { stmt:'번개는 같은 자리에 두 번 치지 않는다', isTrue:false, cat:'과학·자연', truth:'번개는 같은 곳에 여러 번 칠 수 있어요. 특히 높은 건물·탑은 한 해에도 수십 번 맞아요.' },
-    { stmt:'꿀벌은 사람을 쏘면 대부분 자기도 죽는다', isTrue:true, cat:'과학·자연', truth:'맞아요. 꿀벌 침은 미늘이 있어 피부에 박히면 내장 일부가 떨어져 나와 죽어요. 단 말벌은 여러 번 쏘고도 안 죽어요.' },
-    { stmt:'비 올 때 뛰어가면 걷는 것보다 덜 젖는다', isTrue:true, cat:'과학·자연', truth:'진짜! 비를 맞는 시간이 줄어들어 대체로 덜 젖어요.' },
-    // 돈·기기
-    { stmt:'스마트폰 백그라운드 앱을 자주 꺼주면 배터리가 오래간다', isTrue:false, cat:'돈·기기', truth:'요즘 폰은 백그라운드 앱을 거의 전력 안 쓰게 관리해요. 오히려 자꾸 닫으면 다시 켤 때 전력을 더 쓸 수 있어요.' },
-    { stmt:'USB 3 포트는 낮은 번호 포트보다 무조건 빠르다', isTrue:false, cat:'돈·기기', truth:'숫자는 포트 규격이고, 실제 속도는 포트·케이블·기기가 모두 상위 규격일 때만 빨라져요. 케이블이 구형이면 USB3 포트도 느려요.' },
-    { stmt:'충전기를 콘센트에 꽂아만 두고 폰을 안 꽂아도 전기요금이 꽤 나간다', isTrue:false, cat:'돈·기기', truth:'안 꽂은 충전기의 대기 전력은 0.1~0.5W로 아주 작아요. 1년 내내 꽂아둬도 전기요금은 몇백 원 안팎이에요.' },
-    { stmt:'스마트폰은 0%까지 쓰고 100%까지 채우길 반복하면 배터리에 좋다', isTrue:false, cat:'돈·기기', truth:'요즘 리튬 배터리는 20~80% 사이로 자주 충전하는 게 더 오래가요.' }
+  // ───────── 퀴즈 묶음 ─────────
+  const PACKS = [
+    { id:'life', emoji:'🧠', title:'생활 상식 오해', sub:'진짜일까 가짜일까?', type:'ox', cards:[
+      { cat:'청소·생활', stmt:'거품이 풍성하게 많이 날수록 더 깨끗하게 닦인다', isTrue:false, truth:'거품의 양과 세척력은 관계가 없어요. 때를 떼는 건 세정 성분과 문지르는 힘이고, 거품을 거의 안 내는 세제도 잘 닦여요.' },
+      { cat:'청소·생활', stmt:'락스와 식초를 섞으면 더 강력한 청소 효과가 난다', isTrue:false, truth:'두 가지를 섞으면 유독한 염소 가스가 나와 위험해요. 효과가 좋아지긴커녕 호흡기에 해로우니 절대 섞지 마세요.' },
+      { cat:'청소·생활', stmt:'세제는 권장량보다 많이 넣을수록 빨래가 더 깨끗해진다', isTrue:false, truth:'많이 넣으면 헹굼으로 다 빠지지 않아 옷·세탁기에 잔여물이 남아요. 냄새·피부자극의 원인이 될 수 있어요.' },
+      { cat:'청소·생활', stmt:'뜨거운 물로 손을 씻어야 세균이 더 잘 제거된다', isTrue:false, truth:'사람이 견디는 온도로는 세균이 안 죽어요. 중요한 건 온도가 아니라 비누로 20초 이상 충분히 문질러 헹구는 거예요.' },
+      { cat:'청소·생활', stmt:'주방 행주·수세미가 화장실 변기보다 세균이 더 많을 수 있다', isTrue:true, truth:'진짜예요. 젖어 있고 음식 찌꺼기가 남아 세균 번식에 최적이라, 변기보다 더 많이 검출되기도 해요. 자주 삶거나 바꿔주세요.' },
+      { cat:'청소·생활', stmt:'베이킹소다와 식초를 섞으면 강력한 만능 세정제가 된다', isTrue:false, truth:'둘을 섞으면 산-염기 중화로 효과가 서로 상쇄돼 세정력이 세지지 않아요. 보글거림은 이산화탄소가 빠지는 반응일 뿐이에요.' },
+      { cat:'건강·몸', stmt:'손가락 관절을 꺾어 "뚝" 소리를 내면 관절염에 걸린다', isTrue:false, truth:'그 소리는 관절액 속 기포가 터지는 거예요. 관절염을 일으킨다는 근거는 약해요(무리하게 꺾는 습관은 비권장).' },
+      { cat:'건강·몸', stmt:'사람은 평소 뇌의 10%만 사용한다', isTrue:false, truth:'뇌 영상 연구에서 하루 중 거의 모든 영역이 활동해요. "10%만 쓴다"는 유명한 속설이에요.' },
+      { cat:'건강·몸', stmt:'어두운 곳에서 책을 읽으면 시력이 영구적으로 나빠진다', isTrue:false, truth:'눈이 피로하고 일시적으로 불편할 수 있지만, 그 자체가 시력을 영구히 망친다는 근거는 약해요.' },
+      { cat:'건강·몸', stmt:'성인의 정상 체온은 항상 정확히 36.5도다', isTrue:false, truth:'정상 체온은 사람·시간·부위에 따라 36~37.5도로 달라요. 36.5도는 평균에 가까운 값일 뿐이에요.' },
+      { cat:'건강·몸', stmt:'위(胃) 안쪽 점막은 며칠 단위로 계속 새것으로 교체된다', isTrue:true, truth:'맞아요. 위 점막 세포는 강한 위산에 노출돼 빠르게 손상되고, 대체로 며칠 주기로 새 세포로 교체돼요.' },
+      { cat:'건강·몸', stmt:'감기에는 항생제가 잘 듣는다', isTrue:false, truth:'감기는 대부분 바이러스 때문이고 항생제는 세균에만 들어요. (복용은 전문가 안내에 따르세요)' },
+      { cat:'건강·몸', stmt:'면도를 하면 털이 더 굵고 검게 자란다', isTrue:false, truth:'굵어 보이는 건 잘린 단면 때문이에요. 실제 털의 굵기나 색은 면도로 바뀌지 않아요.' },
+      { cat:'건강·몸', stmt:'물은 누구나 하루에 꼭 2리터를 마셔야 한다', isTrue:false, truth:'정해진 양은 없어요. 음식·활동량·개인차에 따라 필요한 수분량이 달라요.' },
+      { cat:'음식', stmt:'MSG(글루타민산나트륨)는 몸에 해로워 먹으면 두통이 생긴다', isTrue:false, truth:'MSG는 다시마·토마토·치즈에도 든 감칠맛 성분으로, 보통 조미량에서 해롭다는 근거는 없어요. "중국집 증후군"도 재현 연구에서 입증되지 못했어요.' },
+      { cat:'음식', stmt:'갈색 설탕(흑설탕)은 흰 설탕보다 훨씬 건강에 좋다', isTrue:false, truth:'흑설탕은 흰 설탕에 당밀을 약간 더한 것일 뿐 영양 차이는 거의 없어요. 칼로리·혈당 영향도 비슷해요.' },
+      { cat:'음식', stmt:'당근을 많이 먹으면 피부가 주황빛으로 변할 수 있다', isTrue:true, truth:'진짜예요. 베타카로틴을 과다 섭취하면 피부가 주황빛이 도는 "카로틴혈증"이 생길 수 있어요. 대체로 무해하고 줄이면 돌아와요.' },
+      { cat:'음식', stmt:'유통기한이 지난 식품은 그 날짜가 지나면 바로 먹으면 안 된다', isTrue:false, truth:'유통기한은 "판매 가능 기한"이라 보관만 잘하면 그 뒤로도 먹을 수 있는 경우가 많아요. 실제 기준은 "소비기한"에 가까워요.' },
+      { cat:'음식', stmt:'꿀은 상온에서 거의 상하지 않고 아주 오래 보관할 수 있다', isTrue:true, truth:'맞아요. 꿀은 수분이 적고 천연 산성이라 세균이 잘 못 자라 밀봉하면 오래가요. 단 만 1세 미만 아기에겐 주지 마세요(보툴리눔균).' },
+      { cat:'과학·자연', stmt:'박쥐는 눈이 멀어서 아무것도 못 본다', isTrue:false, truth:'박쥐는 대부분 눈이 있고 볼 수 있어요. 어두운 곳에선 초음파를 함께 쓸 뿐, 시력이 아예 없는 건 아니에요.' },
+      { cat:'과학·자연', stmt:'금붕어의 기억력은 3초밖에 안 된다', isTrue:false, truth:'금붕어는 몇 달까지 기억한다는 연구가 여럿 있어요. 먹이 시간이나 미로 길을 학습해 기억해요.' },
+      { cat:'과학·자연', stmt:'낙타의 혹에는 물이 들어 있다', isTrue:false, truth:'혹에는 물이 아니라 주로 지방이 저장돼 있어요. 이 지방을 에너지로 쓰며 일부 물도 만들어져요.' },
+      { cat:'과학·자연', stmt:'번개는 같은 자리에 두 번 치지 않는다', isTrue:false, truth:'번개는 같은 곳에 여러 번 칠 수 있어요. 특히 높은 건물·탑은 한 해에도 수십 번 맞아요.' },
+      { cat:'과학·자연', stmt:'꿀벌은 사람을 쏘면 대부분 자기도 죽는다', isTrue:true, truth:'맞아요. 꿀벌 침은 미늘이 있어 피부에 박히면 내장 일부가 떨어져 나와 죽어요. 단 말벌은 여러 번 쏘고도 안 죽어요.' },
+      { cat:'과학·자연', stmt:'비 올 때 뛰어가면 걷는 것보다 덜 젖는다', isTrue:true, truth:'진짜! 비를 맞는 시간이 줄어들어 대체로 덜 젖어요.' },
+      { cat:'돈·기기', stmt:'스마트폰 백그라운드 앱을 자주 꺼주면 배터리가 오래간다', isTrue:false, truth:'요즘 폰은 백그라운드 앱을 거의 전력 안 쓰게 관리해요. 오히려 자꾸 닫으면 다시 켤 때 전력을 더 쓸 수 있어요.' },
+      { cat:'돈·기기', stmt:'USB 3 포트는 낮은 번호 포트보다 무조건 빠르다', isTrue:false, truth:'숫자는 포트 규격이고, 실제 속도는 포트·케이블·기기가 모두 상위 규격일 때만 빨라져요. 케이블이 구형이면 USB3 포트도 느려요.' },
+      { cat:'돈·기기', stmt:'충전기를 콘센트에 꽂아만 두고 폰을 안 꽂아도 전기요금이 꽤 나간다', isTrue:false, truth:'안 꽂은 충전기의 대기 전력은 0.1~0.5W로 아주 작아요. 1년 내내 꽂아둬도 전기요금은 몇백 원 안팎이에요.' },
+      { cat:'돈·기기', stmt:'스마트폰은 0%까지 쓰고 100%까지 채우길 반복하면 배터리에 좋다', isTrue:false, truth:'요즘 리튬 배터리는 20~80% 사이로 자주 충전하는 게 더 오래가요.' }
+    ] },
+    { id:'parenting', emoji:'👶', title:'육아 상식', sub:'알쏭달쏭 육아 OX', type:'ox', cards:[
+      { stmt:"신생아는 푹신한 베개를 베고 두꺼운 이불을 덮어 재워야 포근하고 안전하다.", isTrue:false, truth:"푹신한 베개·이불·인형은 영아 돌연사·질식 위험을 높입니다. 단단하고 평평한 매트리스에 침구 없이 재우는 것이 공인 안전지침입니다." },
+      { stmt:"생후 1년까지 아기는 등을 대고 바로 눕혀 재우는 것이 가장 안전하다.", isTrue:true, truth:"등을 대고 재우기(supine)는 영아 돌연사증후군 위험을 크게 낮추는 가장 확립된 권고입니다. 엎드려·옆으로 재우기는 권장되지 않습니다." },
+      { stmt:"아기가 토할까 봐 옆으로 눕혀 재우는 것이 등으로 재우는 것보다 안전하다.", isTrue:false, truth:"옆으로 재우면 엎드린 자세로 굴러갈 수 있어 위험이 오히려 높습니다. 건강한 아기는 등을 대고 재워도 흡인 위험이 증가하지 않습니다." },
+      { stmt:"신생아실 온도를 높이고 옷을 두껍게 입혀 항상 따뜻하게 해주는 것이 좋다.", isTrue:false, truth:"과도한 보온(과열)은 영아 돌연사 위험요인으로 알려져 있습니다. 실내는 적정 온도를 유지하고 너무 두껍게 싸매지 않는 것이 권장됩니다." },
+      { stmt:"이가 날 때 열이 펄펄 나면 그건 이앓이 때문이니 걱정할 필요 없다.", isTrue:false, truth:"치아 발달로 미열·잇몸 불편은 있을 수 있지만 고열은 이앓이로 설명되지 않습니다. 고열이 있으면 다른 원인을 확인해야 합니다." },
+      { stmt:"아기에게 꿀을 먹이면 영양에 좋으므로 돌 전부터 줘도 괜찮다.", isTrue:false, truth:"돌(만 12개월) 이전 영아에게 꿀은 영아 보툴리눔증 위험이 있어 금지됩니다. 첫돌이 지난 뒤 주는 것이 안전합니다." },
+      { stmt:"백색 소음이나 흔들기로 달랜다고 해도 아기를 세게 흔드는 행동은 절대 금물이다.", isTrue:true, truth:"아기를 세게 흔들면 흔들린 아기 증후군(뇌손상)을 유발할 수 있습니다. 부드러운 달래기와 달리, 격하게 흔드는 행동은 절대 해서는 안 됩니다." },
+      { stmt:"신생아 방에 푹신한 범퍼 가드를 둘러주면 부딪힘을 막아 더 안전하다.", isTrue:false, truth:"아기침대 범퍼는 질식·끼임·목졸림 위험이 있어 사용하지 않도록 권고됩니다. 침대 안은 비워두는 것이 안전합니다." },
+      { stmt:"아기와 같은 침대(어른 침대)에서 함께 자면 더 안전하고 좋다.", isTrue:false, truth:"어른 침대에서의 동침은 깔림·질식·추락 위험을 높입니다. 같은 방에서 별도의 아기용 잠자리를 쓰는 룸셰어링이 권장됩니다." },
+      { stmt:"열성경련을 할 때 아이 입에 손가락이나 물건을 넣어 혀를 깨물지 않게 해야 한다.", isTrue:false, truth:"경련 중 입에 무언가를 넣으면 질식·치아손상·물림 부상 위험이 큽니다. 옆으로 눕히고 주변을 안전하게 한 뒤 지켜보는 것이 권장됩니다." },
+      { stmt:"분유는 끓였다 식힌 물로 타고, 먹다 남긴 분유는 오래 보관하지 않는다.", isTrue:true, truth:"안전한 물로 조제하고 먹다 남긴 분유는 세균 번식 위험이 있어 일정 시간 내 버리는 것이 일반적 권고입니다. 보관·조제 위생은 중요합니다." },
+      { stmt:"신생아는 매일 비누로 전신 목욕을 시켜야 피부가 건강해진다.", isTrue:false, truth:"신생아는 매일 비누 목욕이 꼭 필요하지 않고 잦은 세정은 피부를 건조하게 할 수 있습니다. 주 2~3회 정도와 부위별 청결로 충분한 경우가 많습니다." },
+      { stmt:"갓 태어난 아기는 시력이 완성되어 멀리 있는 것도 또렷하게 본다.", isTrue:false, truth:"신생아는 약 20~30cm 거리의 가까운 사물에 초점이 맞고 시력은 서서히 발달합니다. 멀리 있는 것은 또렷하게 보지 못합니다." },
+      { stmt:"이앓이용 젤이나 호박 목걸이는 아기에게 안전한 진정 수단이다.", isTrue:false, truth:"호박 목걸이는 목졸림·질식 위험이 있고, 일부 마취 성분(벤조카인) 젤도 영아에게 권장되지 않습니다. 차가운 치발기 등 안전한 방법이 권장됩니다." },
+      { stmt:"우는 아기를 안아주면 버릇이 나빠지므로 울게 내버려 둬야 한다.", isTrue:false, truth:"어린 영아를 안아 달래는 것은 버릇을 망치지 않으며 애착과 안정에 도움이 됩니다. 반응적인 양육은 정상적이고 권장됩니다." },
+      { stmt:"이유식은 보통 생후 6개월 무렵부터 시작하며 너무 일찍 시작하지 않는다.", isTrue:true, truth:"고형식은 대략 생후 6개월(준비 신호와 함께) 전후 시작이 일반적 권고입니다. 4개월 이전의 이른 시작은 권장되지 않습니다." },
+      { stmt:"아기 코가 막히면 입으로 직접 콧물을 세게 빨아내는 게 가장 좋다.", isTrue:false, truth:"식염수와 콧물흡인기 사용이 권장되며, 입으로 직접 세게 빨면 감염 전파·점막 손상 우려가 있습니다. 부드러운 방법이 안전합니다." },
+      { stmt:"열이 날 때 알코올로 몸을 닦아주면 빨리 열이 내려 좋다.", isTrue:false, truth:"알코올 마찰은 피부 흡수·중독·급격한 체온변화 위험이 있어 권장되지 않습니다. 미지근한 물수건과 적절한 수분 보충이 안전합니다." },
+      { stmt:"신생아 딸꾹질은 흔하고 대개 저절로 멎으므로 크게 걱정하지 않아도 된다.", isTrue:true, truth:"영아의 딸꾹질은 매우 흔하고 보통 해롭지 않으며 스스로 멎습니다. 특별한 치료 없이 지켜봐도 되는 경우가 많습니다." },
+      { stmt:"걸음마를 일찍 시키려고 보행기를 태우면 아기가 더 빨리 걷는다.", isTrue:false, truth:"보행기는 걷기를 앞당기지 않고 오히려 늦출 수 있으며 추락·화상 등 사고 위험이 큽니다. 여러 기관에서 사용을 권장하지 않습니다." },
+      { stmt:"카시트는 보통 자세가 잡힐 때까지 영아용은 뒤를 보게(후방) 장착하는 것이 안전하다.", isTrue:true, truth:"어린 영아는 후방 장착 카시트가 충돌 시 머리·목을 더 잘 보호합니다. 권장 기준까지는 뒤를 보게 태우는 것이 확립된 안전지침입니다." },
+      { stmt:"아기에게 물을 일찍부터 충분히 먹여야 탈수를 막을 수 있다.", isTrue:false, truth:"생후 6개월 이전 영아에게 과도한 물은 수분 불균형(물 중독) 위험이 있어 권장되지 않습니다. 이 시기 수분은 모유나 분유로 충분합니다." }
+    ] },
+    { id:'english', emoji:'🔤', title:'기초 영어 단어', sub:'뜻 고르기', type:'mcq', cards:[
+      { q:"apple", choices:["사과","바나나","포도","수박"], answer:0, explain:"과일. I ate an apple." },
+      { q:"run", choices:["달리다","앉다","자다","먹다"], answer:0, explain:"동사. I run every morning." },
+      { q:"water", choices:["물","불","공기","흙"], answer:0, explain:"명사. Drink some water." },
+      { q:"book", choices:["책","의자","연필","가방"], answer:0, explain:"명사. Read a book." },
+      { q:"happy", choices:["행복한","슬픈","화난","피곤한"], answer:0, explain:"형용사. I'm happy today." },
+      { q:"dog", choices:["개","고양이","새","말"], answer:0, explain:"명사. The dog barks." },
+      { q:"big", choices:["큰","작은","빠른","느린"], answer:0, explain:"형용사. A big house." },
+      { q:"eat", choices:["먹다","마시다","걷다","보다"], answer:0, explain:"동사. Let's eat lunch." },
+      { q:"open", choices:["열다","닫다","사다","팔다"], answer:0, explain:"동사. Open the door." },
+      { q:"red", choices:["빨간","파란","노란","초록"], answer:0, explain:"색깔. A red apple." },
+      { q:"morning", choices:["아침","점심","저녁","밤"], answer:0, explain:"명사. Good morning!" },
+      { q:"buy", choices:["사다","팔다","빌리다","주다"], answer:0, explain:"동사. I buy bread." },
+      { q:"friend", choices:["친구","가족","선생님","이웃"], answer:0, explain:"명사. My best friend." },
+      { q:"hungry", choices:["배고픈","목마른","졸린","아픈"], answer:0, explain:"형용사. I'm hungry." },
+      { q:"slow", choices:["느린","빠른","높은","낮은"], answer:0, explain:"형용사. A slow car." },
+      { q:"money", choices:["돈","시간","음식","옷"], answer:0, explain:"명사. I need money." },
+      { q:"weather", choices:["날씨","계절","온도","바람"], answer:0, explain:"명사. How's the weather?" },
+      { q:"decide", choices:["결정하다","질문하다","대답하다","설명하다"], answer:0, explain:"동사. I can't decide." },
+      { q:"borrow", choices:["빌리다","빌려주다","돌려주다","나누다"], answer:0, explain:"동사. Can I borrow a pen? (빌려주다=lend, 반대 방향)" },
+      { q:"expensive", choices:["비싼","싼","무거운","가벼운"], answer:0, explain:"형용사. A very expensive car." },
+      { q:"remember", choices:["기억하다","잊다","상상하다","의심하다"], answer:0, explain:"동사. I remember you." },
+      { q:"travel", choices:["여행하다","머무르다","일하다","쉬다"], answer:0, explain:"동사. I love to travel." },
+      { q:"angry", choices:["화난","기쁜","무서운","지루한"], answer:0, explain:"형용사. Don't be angry." },
+      { q:"vegetable", choices:["채소","과일","고기","빵"], answer:0, explain:"명사. Eat your vegetables." },
+      { q:"difficult", choices:["어려운","쉬운","재미있는","지루한"], answer:0, explain:"형용사. A difficult question." },
+      { q:"return", choices:["돌려주다","빌리다","버리다","숨기다"], answer:0, explain:"동사. Return the book. (돌려주다=give back)" }
+    ] },
+    { id:'japanese', emoji:'🗾', title:'기초 일본어 단어', sub:'뜻 고르기', type:'mcq', cards:[
+      { q:"水(みず)", choices:["물","불","바람","흙"], answer:0, explain:"읽기: みず. 마시는 물." },
+      { q:"猫(ねこ)", choices:["고양이","개","새","물고기"], answer:0, explain:"읽기: ねこ. 동물 고양이." },
+      { q:"犬(いぬ)", choices:["개","고양이","말","소"], answer:0, explain:"읽기: いぬ. 동물 개." },
+      { q:"食べる(たべる)", choices:["먹다","마시다","자다","걷다"], answer:0, explain:"읽기: たべる. ごはんを食べる(밥을 먹다)." },
+      { q:"飲む(のむ)", choices:["마시다","읽다","쓰다","사다"], answer:0, explain:"읽기: のむ. 水を飲む(물을 마시다)." },
+      { q:"学校(がっこう)", choices:["학교","회사","병원","역"], answer:0, explain:"읽기: がっこう. 학생이 공부하는 곳." },
+      { q:"明日(あした)", choices:["내일","어제","오늘","지난주"], answer:0, explain:"읽기: あした. 내일." },
+      { q:"昨日(きのう)", choices:["어제","내일","오늘","아침"], answer:0, explain:"읽기: きのう. 어제." },
+      { q:"今日(きょう)", choices:["오늘","어제","내일","저녁"], answer:0, explain:"읽기: きょう. 오늘." },
+      { q:"人(ひと)", choices:["사람","동물","나무","집"], answer:0, explain:"읽기: ひと. 사람." },
+      { q:"車(くるま)", choices:["자동차","자전거","비행기","배"], answer:0, explain:"읽기: くるま. 자동차." },
+      { q:"電車(でんしゃ)", choices:["전철","버스","택시","트럭"], answer:0, explain:"읽기: でんしゃ. 전철·기차." },
+      { q:"家(いえ)", choices:["집","학교","가게","공원"], answer:0, explain:"읽기: いえ. 집." },
+      { q:"友達(ともだち)", choices:["친구","가족","선생님","손님"], answer:0, explain:"읽기: ともだち. 친구." },
+      { q:"先生(せんせい)", choices:["선생님","학생","의사","점원"], answer:0, explain:"읽기: せんせい. 선생님." },
+      { q:"学生(がくせい)", choices:["학생","선생님","회사원","주부"], answer:0, explain:"읽기: がくせい. 학생." },
+      { q:"見る(みる)", choices:["보다","듣다","말하다","읽다"], answer:0, explain:"읽기: みる. テレビを見る(TV를 보다)." },
+      { q:"聞く(きく)", choices:["듣다","보다","쓰다","사다"], answer:0, explain:"읽기: きく. 듣다·묻다." },
+      { q:"行く(いく)", choices:["가다","오다","돌아오다","멈추다"], answer:0, explain:"읽기: いく. 学校へ行く(학교에 가다)." },
+      { q:"来る(くる)", choices:["오다","가다","나가다","들어가다"], answer:0, explain:"읽기: くる. 오다." },
+      { q:"大きい(おおきい)", choices:["크다","작다","높다","길다"], answer:0, explain:"읽기: おおきい. 크다." },
+      { q:"小さい(ちいさい)", choices:["작다","크다","넓다","무겁다"], answer:0, explain:"읽기: ちいさい. 작다." },
+      { q:"暑い(あつい)", choices:["덥다","춥다","따뜻하다","시원하다"], answer:0, explain:"읽기: あつい. 날씨가 덥다." },
+      { q:"寒い(さむい)", choices:["춥다","덥다","뜨겁다","따뜻하다"], answer:0, explain:"읽기: さむい. 날씨가 춥다." },
+      { q:"安い(やすい)", choices:["싸다","비싸다","멀다","느리다"], answer:0, explain:"읽기: やすい. 값이 싸다." }
+    ] }
   ];
 
-  // ── 상태 ──
   const ROUND = 10;
-  let deck = [], idx = 0, correct = 0, answered = false;
+  let pack = null, deck = [], idx = 0, correct = 0, answered = false, btns = [];
 
-  function shuffle(a){ a = a.slice(); for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+  function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 
-  function startRound(){
-    deck = shuffle(CARDS).slice(0, Math.min(ROUND, CARDS.length));
-    idx = 0; correct = 0;
-    $('result').classList.remove('show'); $('result').style.display='none';
-    $('quiz').style.display = '';
-    showCard();
+  // ── 허브 렌더 ──
+  function renderHub(){
+    const el = $('packs'); el.innerHTML='';
+    PACKS.forEach(p => {
+      const ready = p.cards.length > 0;
+      const d = document.createElement('div');
+      d.className = 'pack' + (ready ? '' : ' soon');
+      d.innerHTML = `<div class="pe">${p.emoji}</div><h3>${p.title}</h3><div class="ps">${p.sub}</div>`
+        + `<span class="pc">${ready ? (p.cards.length + '문제') : '준비 중'}</span>`;
+      if (ready) d.addEventListener('click', () => startPack(p));
+      el.appendChild(d);
+    });
+  }
+
+  // ── 안 본 문제 우선으로 라운드 뽑기 (다시 풀어도 새 문제) ──
+  function pickRound(p){
+    const key = 'quizseen_' + p.id;
+    let seen = []; try { seen = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e){}
+    if (!Array.isArray(seen)) seen = [];
+    const all = p.cards.map((_,i)=>i);
+    let unseen = all.filter(i => !seen.includes(i));
+    const n = Math.min(ROUND, p.cards.length);
+    if (unseen.length < n){ seen = []; unseen = all.slice(); }    // 다 봤으면 리셋
+    const chosen = shuffle(unseen).slice(0, n);
+    seen = [...new Set([...seen, ...chosen])];
+    try { localStorage.setItem(key, JSON.stringify(seen)); } catch(e){}
+    return chosen.map(i => p.cards[i]);
+  }
+
+  function show(view){ ['hub','quiz','resultWrap'].forEach(v => $(v).classList.toggle('hide', v!==view)); }
+
+  function startPack(p){
+    pack = p; deck = pickRound(p); idx = 0; correct = 0;
+    show('quiz'); showCard();
   }
 
   function showCard(){
     answered = false;
     const c = deck[idx];
-    $('cat').textContent = c.cat;
-    $('stmt').textContent = c.stmt;
+    $('cat').textContent = c.cat || pack.title;
+    $('stmt').textContent = (pack.type==='ox') ? c.stmt : c.q;
+    $('ask').textContent = (pack.type==='ox') ? '이 말, 진짜일까요 가짜일까요?' : '알맞은 뜻을 고르세요';
     $('pcount').textContent = (idx+1) + ' / ' + deck.length;
     $('barFill').style.width = (idx / deck.length * 100) + '%';
     $('reveal').classList.remove('show');
-    [$('btnReal'), $('btnFake')].forEach(b => { b.disabled = false; b.style.outline=''; });
+    renderChoices(c);
   }
 
-  function answer(userSaysTrue){
-    if (answered) return;
-    answered = true;
+  function renderChoices(c){
+    const ch = $('choices'); ch.innerHTML=''; btns=[];
+    if (pack.type==='ox'){
+      ch.className = 'choices row';
+      btns.push(mkBtn('⭕ 진짜', 'real', () => answer(true)));
+      btns.push(mkBtn('❌ 가짜', 'fake', () => answer(false)));
+    } else {
+      ch.className = 'choices col';
+      c.choices.forEach((txt,i) => btns.push(mkBtn(txt, 'mcq', () => answer(i))));
+    }
+    btns.forEach(b => ch.appendChild(b));
+  }
+  function mkBtn(txt, cls, fn){ const b=document.createElement('button'); b.className=cls; b.textContent=txt; b.addEventListener('click', fn); return b; }
+
+  function answer(val){
+    if (answered) return; answered = true;
     const c = deck[idx];
-    const right = (userSaysTrue === c.isTrue);
+    let right, correctIdx;
+    if (pack.type==='ox'){ right = (val===c.isTrue); correctIdx = c.isTrue ? 0 : 1; }
+    else { right = (val===c.answer); correctIdx = c.answer; }
     if (right) correct++;
-    $('btnReal').disabled = true; $('btnFake').disabled = true;
-    // 정답 버튼 강조
-    (c.isTrue ? $('btnReal') : $('btnFake')).style.outline = '3px solid var(--accent)';
+    btns.forEach((b,i) => { b.disabled = true; if (i===correctIdx) b.classList.add('correct'); });
+    if (!right){ const pick = (pack.type==='ox') ? (val?0:1) : val; if (btns[pick]) btns[pick].classList.add('wrong'); }
     $('verdict').textContent = right ? '정답! 🎉' : '땡! 🙊';
     $('verdict').className = 'verdict ' + (right ? 'ok' : 'no');
-    $('truth').innerHTML = '<b>' + (c.isTrue ? '진짜예요.' : '가짜예요.') + '</b> ' + c.truth;
+    if (pack.type==='ox') $('truth').innerHTML = '<b>' + (c.isTrue ? '진짜예요.' : '가짜예요.') + '</b> ' + c.truth;
+    else $('truth').innerHTML = '정답: <b>' + c.choices[c.answer] + '</b>' + (c.explain ? ' — ' + c.explain : '');
     $('reveal').classList.add('show');
-    $('barFill').style.width = ((idx+1) / deck.length * 100) + '%';
+    $('barFill').style.width = ((idx+1)/deck.length*100) + '%';
   }
 
-  $('btnReal').addEventListener('click', () => answer(true));
-  $('btnFake').addEventListener('click', () => answer(false));
-  $('nextBtn').addEventListener('click', () => {
-    idx++;
-    if (idx >= deck.length) showResult();
-    else showCard();
-  });
+  $('btn' ); // noop
+  $('nextBtn').addEventListener('click', () => { idx++; if (idx>=deck.length) showResult(); else showCard(); });
 
   function showResult(){
-    $('quiz').style.display = 'none';
-    $('result').style.display = 'block'; $('result').classList.add('show');
-    const total = deck.length, wrong = total - correct;
+    show('resultWrap');
+    const total = deck.length, wrong = total - correct, pct = Math.round(correct/total*100);
     $('rscore').textContent = correct + '/' + total;
-    const pct = Math.round(correct/total*100);
     let msg;
-    if (wrong === 0) msg = '상식 박사! 다 맞혔어요 👏';
-    else if (pct >= 70) msg = '오 좀 아는데요? 👍';
-    else if (pct >= 40) msg = '의외로 많이 속았네요 🤔';
+    if (wrong===0) msg = '완벽! 다 맞혔어요 👏';
+    else if (pct>=70) msg = '오 좀 아는데요? 👍';
+    else if (pct>=40) msg = '의외로 많이 속았네요 🤔';
     else msg = '헉, 우리가 아는 게 이렇게 틀렸다고? 😱';
     $('rmsg').textContent = msg;
-    $('rsub').textContent = `${total}개 중 ${wrong}개나 잘못 알고 있었어요`;
+    $('rsub').textContent = `[${pack.title}] ${total}개 중 ${wrong}개 틀렸어요`;
   }
 
-  $('againBtn').addEventListener('click', startRound);
+  $('againBtn').addEventListener('click', () => startPack(pack));
+  $('homeBtn').addEventListener('click', () => { renderHub(); show('hub'); });
   $('shareBtn').addEventListener('click', async () => {
     const total = deck.length, wrong = total - correct;
-    const text = `[진짜야? 생활상식 퀴즈] 나 ${total}개 중 ${wrong}개 틀렸어 😅 너도 해봐!\nhttps://cbuar4564-glitch.github.io/APP_jian_new/truth-quiz/`;
+    const text = `[퀴즈 한 입 · ${pack.title}] 나 ${total}개 중 ${wrong}개 틀렸어 😅 너도 해봐!\n${BASE}`;
     let ok = true;
-    try {
-      if (navigator.share) { await navigator.share({ text }); }
-      else { await navigator.clipboard.writeText(text); }
-    } catch(e){
+    try { if (navigator.share) await navigator.share({ text }); else await navigator.clipboard.writeText(text); }
+    catch(e){
       try { const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
         document.body.appendChild(ta); ta.focus(); ta.select(); ok=document.execCommand('copy'); ta.remove(); }
       catch(e2){ ok=false; }
@@ -231,7 +366,7 @@
     setTimeout(()=>{ b.textContent=o; b.classList.remove('done'); }, 1800);
   });
 
-  startRound();
+  renderHub();
 </script>
 </body>
 </html>
