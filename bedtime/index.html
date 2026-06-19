@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>꿈동산 — 우리 아이 잠자리 이야기</title>
+<style>
+  :root{
+    --bg1:#15102e; --bg2:#241a47; --card:#2c2356; --card2:#342a63;
+    --ink:#f4ecd8; --sub:#c5bce6; --line:#473a78; --accent:#b9a3ff;
+    --accent-d:#9b80f5; --ok:#6fd3a3; --warnbg:#3a2f5e;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; color:var(--ink);
+    background:radial-gradient(1200px 600px at 80% -10%, #3a2c6b 0%, transparent 60%),
+               linear-gradient(160deg, var(--bg1), var(--bg2));
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:560px; margin:0 auto; padding:20px 16px 70px;}
+  header h1{font-size:23px; margin:4px 0 2px;}
+  header p{margin:0 0 16px; color:var(--sub); font-size:13.5px;}
+  .privacy{
+    background:rgba(185,163,255,.12); border:1px solid var(--line); color:#ded4ff;
+    font-size:12.5px; border-radius:12px; padding:9px 12px; margin-bottom:14px;
+  }
+  .tabs{display:flex; gap:8px; margin-bottom:14px;}
+  .tabs button{
+    flex:1; padding:12px 4px; border:1px solid var(--line); background:var(--card);
+    border-radius:13px; font-size:14.5px; font-weight:700; color:var(--sub); cursor:pointer;
+    transition:.15s;
+  }
+  .tabs button.active{background:var(--accent); color:#1c1338; border-color:var(--accent);}
+  .tabs button:focus-visible, .make:focus-visible, .ctrl:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:18px;
+    padding:18px; margin-bottom:14px; box-shadow:0 10px 30px rgba(0,0,0,.25);
+  }
+  label{display:block; font-size:13px; font-weight:700; margin:14px 0 6px; color:#e7defb;}
+  label:first-child{margin-top:0;}
+  input,select{
+    width:100%; padding:12px; border:1px solid var(--line); border-radius:12px;
+    font-size:15px; font-family:inherit; background:#211a45; color:var(--ink);
+  }
+  input::placeholder{color:#8a7fb8;}
+  input:focus,select:focus{outline:2px solid var(--accent); border-color:var(--accent);}
+  .row{display:flex; gap:10px;}
+  .row>div{flex:1;}
+  .len{display:flex; gap:8px; margin-top:6px;}
+  .len label{
+    flex:1; margin:0; display:flex; align-items:center; justify-content:center; gap:6px;
+    border:1px solid var(--line); border-radius:12px; padding:10px; cursor:pointer; font-weight:700; background:#241c49;
+  }
+  .len input{width:auto;}
+  .make{
+    width:100%; margin-top:18px; padding:15px; border:0; border-radius:14px;
+    background:var(--accent); color:#1c1338; font-size:17px; font-weight:800; cursor:pointer;
+  }
+  .make:active{background:var(--accent-d);}
+  .story{display:none;}
+  .story.show{display:block;}
+  .story h2{font-size:15px; margin:2px 0 10px; color:#d9ccff;}
+  .storytext{
+    white-space:pre-wrap; background:#221b47; border:1px solid var(--line);
+    border-radius:14px; padding:18px; font-size:17px; line-height:1.95; color:#fbf4e2;
+    letter-spacing:.1px;
+  }
+  .ctrls{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .ctrl{
+    flex:1; min-width:120px; padding:12px; border:1px solid var(--accent);
+    background:transparent; color:#e7defb; font-size:14.5px; font-weight:700;
+    border-radius:12px; cursor:pointer;
+  }
+  .ctrl.primary{background:var(--accent); color:#1c1338; border-color:var(--accent);}
+  .ctrl.speaking{background:var(--ok); color:#0e2b1e; border-color:var(--ok);}
+  .ctrl.done{background:var(--ok); color:#0e2b1e; border-color:var(--ok);}
+  /* 루틴 */
+  .checks{list-style:none; padding:0; margin:6px 0 0;}
+  .checks li{margin:0;}
+  .checks label{
+    display:flex; align-items:center; gap:12px; margin:0 0 8px; padding:13px 14px;
+    background:#241c49; border:1px solid var(--line); border-radius:12px; cursor:pointer;
+    font-size:15px; font-weight:600;
+  }
+  .checks input{width:22px; height:22px; accent-color:var(--accent);}
+  .checks input:checked + span{color:#9fe9c4; text-decoration:line-through; text-decoration-color:#5fbf93;}
+  .progress{height:12px; background:#221a45; border-radius:99px; overflow:hidden; margin:12px 0 4px;}
+  .bar{height:100%; width:0; background:linear-gradient(90deg,var(--accent),var(--ok)); transition:width .35s;}
+  .progress-txt{font-size:12.5px; color:var(--sub); text-align:center;}
+  .breath-wrap{text-align:center; padding:8px 0 2px;}
+  .breath-circle{
+    width:120px; height:120px; margin:14px auto 6px; border-radius:50%;
+    background:radial-gradient(circle at 50% 40%, #d7c7ff, #9b80f5);
+    transform:scale(1); transition:transform 4s ease-in-out;
+    box-shadow:0 0 40px rgba(155,128,245,.5);
+  }
+  .breath-label{font-size:16px; font-weight:700; min-height:24px; color:#e7defb;}
+  .breath-sub{font-size:12.5px; color:var(--sub); margin-top:2px;}
+  .notice{
+    margin-top:14px; background:var(--warnbg); border:1px solid var(--line);
+    color:#d6ccf2; font-size:12.5px; border-radius:12px; padding:11px 13px;
+  }
+  footer{text-align:center; color:#8a7fb8; font-size:11.5px; margin-top:18px;}
+  .backlink{display:inline-block; margin-bottom:10px; color:var(--sub); font-size:12.5px; text-decoration:none;}
+  .backlink:hover{color:#fff;}
+  @media (prefers-reduced-motion: reduce){
+    .tabs button, .bar{ transition:none; }
+    .breath-circle{ transition-duration:.4s !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="backlink" href="../index.html">← 다른 앱 보기</a>
+  <header>
+    <h1>🌙 꿈동산</h1>
+    <p>오늘 아이 마음에 맞는 잠자리 이야기를 만들어, 차분한 목소리로 읽어드려요.</p>
+  </header>
+
+  <div class="privacy">🔒 입력 내용은 <b>이 앱이 외부로 전송·저장하지 않아요.</b> (읽어주기는 기기에 내장된 음성을 우선 사용합니다.)</div>
+
+  <div class="tabs" role="tablist" aria-label="기능 선택">
+    <button data-tab="story" id="tab-story" class="active" role="tab" aria-selected="true" aria-controls="pane-story">잠자리 이야기</button>
+    <button data-tab="routine" id="tab-routine" role="tab" aria-selected="false" aria-controls="pane-routine">잠자리 루틴</button>
+  </div>
+
+  <!-- ========== 이야기 ========== -->
+  <div class="card pane" id="pane-story" role="tabpanel" aria-labelledby="tab-story" tabindex="0">
+    <label for="s_name">아이 이름 (또는 애칭)</label>
+    <input id="s_name" placeholder="예: 지안, 우리 아기" />
+
+    <label for="s_mood">오늘 아이 마음은 어땠나요?</label>
+    <select id="s_mood">
+      <option value="normal">평범하고 포근한 하루였어요</option>
+      <option value="scared">어둠·무서운 꿈이 무서워요</option>
+      <option value="fight">동생·친구와 다퉜어요</option>
+      <option value="worry">내일 새로운 일이 걱정돼요</option>
+      <option value="angry">화나고 속상한 일이 있었어요</option>
+      <option value="miss">보고 싶은 사람이 있어요</option>
+    </select>
+
+    <div class="row">
+      <div>
+        <label for="s_friend">함께할 친구</label>
+        <select id="s_friend">
+          <option value="아기 곰">🐻 아기 곰</option>
+          <option value="토끼">🐰 토끼</option>
+          <option value="아기 고양이">🐱 아기 고양이</option>
+          <option value="강아지">🐶 강아지</option>
+          <option value="별님">⭐ 별님</option>
+          <option value="아기 펭귄">🐧 아기 펭귄</option>
+        </select>
+      </div>
+      <div>
+        <label for="s_place">이야기 나라</label>
+        <select id="s_place">
+          <option value="포근한 숲">🌲 포근한 숲</option>
+          <option value="반짝이는 바다">🌊 반짝이는 바다</option>
+          <option value="구름 나라">☁️ 구름 나라</option>
+          <option value="우리 집 이불 나라">🛏️ 이불 나라</option>
+          <option value="별빛 들판">✨ 별빛 들판</option>
+        </select>
+      </div>
+    </div>
+
+    <span aria-hidden="true" style="display:block;font-size:13px;font-weight:700;margin:14px 0 6px;color:#e7defb;">이야기 길이</span>
+    <div class="len" role="radiogroup" aria-label="이야기 길이">
+      <label><input type="radio" name="s_len" value="short" /> 짧게</label>
+      <label><input type="radio" name="s_len" value="normal" checked /> 보통</label>
+    </div>
+
+    <button class="make" id="makeStory">이야기 만들기 ✨</button>
+
+    <div class="story" id="storyBox">
+      <h2>📖 오늘의 잠자리 이야기</h2>
+      <div class="storytext" id="storyText" aria-live="polite" aria-atomic="true"></div>
+      <div class="ctrls">
+        <button class="ctrl primary" id="speakBtn" aria-pressed="false">🔊 읽어주기</button>
+        <button class="ctrl" id="stopBtn">⏹ 멈춤</button>
+        <button class="ctrl" id="copyBtn">복사</button>
+      </div>
+      <div class="notice">💜 읽어주기는 기기에 내장된 목소리를 사용해요. 수면 어려움이 오래 이어지면 소아과·전문가와 상담해 주세요. (이 앱은 정보·정서 도움용입니다.)</div>
+    </div>
+  </div>
+
+  <!-- ========== 루틴 ========== -->
+  <div class="card pane" id="pane-routine" role="tabpanel" aria-labelledby="tab-routine" tabindex="0" style="display:none;">
+    <h2 style="margin:0 0 4px; font-size:16px; color:#e7defb;">오늘의 잠자리 준비</h2>
+    <p style="margin:0 0 6px; color:var(--sub); font-size:13px;">하나씩 같이 해볼까요? 다 하면 별이 가득 차요.</p>
+    <ul class="checks" id="checkList">
+      <li><label><input type="checkbox" /> <span>🪥 양치질했어요</span></label></li>
+      <li><label><input type="checkbox" /> <span>🚽 화장실 다녀왔어요</span></label></li>
+      <li><label><input type="checkbox" /> <span>💡 불을 살짝 줄였어요</span></label></li>
+      <li><label><input type="checkbox" /> <span>🧸 인형이랑 인사했어요</span></label></li>
+      <li><label><input type="checkbox" /> <span>🤗 엄마·아빠랑 꼭 안았어요</span></label></li>
+    </ul>
+    <div class="progress"><div class="bar" id="checkBar"></div></div>
+    <div class="progress-txt" id="checkTxt">0 / 5 — 천천히 시작해요</div>
+
+    <div style="height:1px; background:var(--line); margin:18px 0;"></div>
+
+    <h2 style="margin:0 0 4px; font-size:16px; color:#e7defb;">함께 숨쉬기 🌬️</h2>
+    <p style="margin:0 0 2px; color:var(--sub); font-size:13px;">1분 동안 천천히 숨을 쉬면 마음이 차분해져요.</p>
+    <div class="breath-wrap">
+      <div class="breath-circle" id="breathCircle"></div>
+      <div class="breath-label" id="breathLabel">준비됐나요?</div>
+      <div class="breath-sub" id="breathSub">시작을 누르면 1분 동안 함께해요</div>
+      <button class="ctrl primary" id="breathBtn" style="max-width:200px; margin:14px auto 0;">시작하기</button>
+    </div>
+    <div class="notice">💜 이 앱은 정보·정서 도움용이에요. 아이가 잠들기를 지속적으로 힘들어하면 소아과·전문가와 상담해 주세요.</div>
+  </div>
+
+  <footer>꿈동산 · 모든 처리는 기기 안에서만 · 정서·정보 도움용 도구</footer>
+</div>
+
+<script>
+  // ---- 탭 ----
+  const tabs = document.querySelectorAll('.tabs button');
+  const panes = { story:'pane-story', routine:'pane-routine' };
+  tabs.forEach(b => b.addEventListener('click', () => {
+    tabs.forEach(x => { x.classList.remove('active'); x.setAttribute('aria-selected','false'); });
+    b.classList.add('active'); b.setAttribute('aria-selected','true');
+    Object.values(panes).forEach(id => document.getElementById(id).style.display = 'none');
+    document.getElementById(panes[b.dataset.tab]).style.display = 'block';
+    if (b.dataset.tab !== 'routine') stopBreath();
+    if (b.dataset.tab !== 'story') stopSpeak();
+  }));
+  // 탭 키보드 좌우 이동 (ARIA tabs 패턴)
+  const tabList = document.querySelector('.tabs');
+  tabList.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    const arr = [...tabs];
+    const i = arr.indexOf(document.activeElement);
+    if (i < 0) return;
+    const next = e.key === 'ArrowRight' ? (i + 1) % arr.length : (i - 1 + arr.length) % arr.length;
+    arr[next].focus(); arr[next].click();
+    e.preventDefault();
+  });
+
+  const $ = id => document.getElementById(id);
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  // 받침 여부로 조사 자동 선택
+  const josa = (w, withB, withoutB) => {
+    if (!w) return withB;
+    const c = w.charCodeAt(w.length - 1);
+    if (c < 0xAC00 || c > 0xD7A3) return withoutB;
+    return (c - 0xAC00) % 28 !== 0 ? withB : withoutB;
+  };
+  const sub = (t, name, friend, place) => t
+    .replace(/{name이}/g, name + josa(name, '이', '가'))
+    .replace(/{name은}/g, name + josa(name, '은', '는'))
+    .replace(/{name을}/g, name + josa(name, '을', '를'))
+    .replace(/{name아}/g, name + josa(name, '아', '야'))
+    .replace(/{name}/g, name)
+    .replace(/{friend이}/g, friend + josa(friend, '이', '가'))
+    .replace(/{friend은}/g, friend + josa(friend, '은', '는'))
+    .replace(/{friend과}/g, friend + josa(friend, '과', '와'))
+    .replace(/{friend}/g, friend)
+    .replace(/{place}/g, place);
+
+  // ---- 이야기 조각들 ----
+  const PLACE_IMG = {
+    '포근한 숲':'폭신한 이끼와 따뜻한 나뭇잎 이불이 가득한',
+    '반짝이는 바다':'잔잔한 파도가 자장가처럼 찰랑이는',
+    '구름 나라':'솜사탕처럼 부드러운 구름이 둥실 떠다니는',
+    '우리 집 이불 나라':'세상에서 가장 포근한',
+    '별빛 들판':'반짝이는 별빛이 풀잎마다 내려앉은'
+  };
+  const OPENINGS = [
+    '{name아}, 오늘 하루도 정말 애썼어요. 이제 {friend과} 함께 {placeimg} {place} 쪽으로 살며시 떠나볼까요?',
+    '깊은 밤, {name이} 눈을 감자 {placeimg} {place}의 풍경이 살며시 펼쳐졌어요. 그곳에 {friend이} 방긋 웃으며 기다리고 있었지요.'
+  ];
+  const MOOD = {
+    normal: {
+      scene: '{friend과} {name은} 손을 잡고 천천히 걸었어요. 바람은 보드랍고, 들리는 소리라곤 작은 숨소리뿐이었어요. "오늘 하루는 어땠어?" {friend이} 묻자, {name은} 좋았던 순간들을 하나하나 떠올리며 빙긋 웃었답니다.',
+      comfort: '"평범한 하루가 가장 소중한 거야." {friend이} 속삭였어요. "오늘 {name이} 웃고, 먹고, 뛰어놀았잖아. 그게 바로 행복이란다."'
+    },
+    scared: {
+      scene: '그런데 {name은} 마음 한구석이 조금 무서웠어요. 어두운 곳이 무섭다고 살짝 말하자, {friend이} 따뜻한 손을 꼭 잡아 주었어요. "괜찮아. 어둠은 우리를 폭 안아 주는 포근한 담요 같은 거야." 그러자 어둠 속에서 작은 별빛들이 하나둘 반짝이기 시작했어요.',
+      comfort: '"무서울 땐 숨을 천천히 쉬고, 내가 옆에 있다는 걸 기억해." {friend이} 말했어요. "{name은} 생각보다 훨씬 용감하단다. 그리고 너를 사랑하는 사람들이 늘 가까이에서 지켜 주고 있어." {name은} 마음이 사르르 놓였어요.'
+    },
+    fight: {
+      scene: '{name은} 낮에 있었던 다툼이 떠올라 마음이 무거웠어요. {friend이} 가만히 이야기를 들어 주었어요. "속상했겠다. 그래도 미운 마음보다 보고 싶은 마음이 더 크지 않아?" {name은} 고개를 가만히 끄덕였어요.',
+      comfort: '"누구나 다툴 수 있어. 중요한 건 다시 손을 잡는 거란다." {friend이} 웃었어요. "내일 아침엔 먼저 미안해라고 말해 볼까? 그 한마디면 마음이 봄눈처럼 사르르 녹을 거야." {name은} 마음이 한결 가벼워졌어요.'
+    },
+    worry: {
+      scene: '{name은} 내일 있을 새로운 일이 조금 걱정됐어요. 가슴이 콩닥콩닥 뛰었지요. {friend이} 곁에 앉아 말했어요. "걱정이 드는 건, {name이} 그만큼 잘하고 싶어서 그런 거야. 멋진 마음이란다."',
+      comfort: '"새로운 건 누구에게나 조금 떨려. 하지만 {name은} 한 걸음씩 해낼 수 있어." {friend이} 다정하게 말했어요. "잘 안 돼도 괜찮아. 도전했다는 것만으로 넌 이미 멋져." {name은} 가슴이 따뜻해졌어요.'
+    },
+    angry: {
+      scene: '{name은} 속상한 마음이 아직 남아 있었어요. {friend이} 조용히 곁을 지켜 주었어요. "화가 났구나. 화는 나쁜 게 아니야. 마음이 힘들다고 보내는 신호일 뿐이란다." 둘은 함께 후—하고 큰 숨을 내쉬었어요.',
+      comfort: '"속상한 마음은 숨을 쉴 때마다 조금씩 작아져." {friend이} 말했어요. "내일은 새 하루가 우리를 기다리고 있어. 오늘의 속상함은 여기 두고, 가벼운 마음으로 잠들자." {name은} 마음이 차분해졌어요.'
+    },
+    miss: {
+      scene: '{name은} 보고 싶은 사람이 떠올라 마음이 몽글몽글했어요. {friend이} 부드럽게 말했어요. "보고 싶다는 건, 그만큼 깊이 사랑한다는 뜻이야." 밤하늘의 별 하나가 {name을} 향해 따뜻하게 반짝였어요.',
+      comfort: '"우리가 같은 달을 바라보는 한, 마음은 늘 이어져 있단다." {friend이} 속삭였어요. "눈을 감으면 그 따뜻한 마음이 {name을} 포근히 감싸 줄 거야." {name은} 포근한 사랑에 폭 감싸였어요.'
+    }
+  };
+  const WINDDOWNS = [
+    '이제 {friend이} 나직이 노래를 불러 주었어요. 바람이 잦아들고, {place}도 살며시 잠이 들었어요.\n\n천천히 숨을 들이쉬고… 후— 길게 내쉬어요. 눈꺼풀이 점점 무거워지고, 온몸이 솜처럼 포근해져요.\n\n잘 자요, {name아}. 오늘도 사랑해요. 좋은 꿈 꾸렴. 🌙',
+    '{friend은} {name을} 폭신한 이불처럼 감싸 주었어요. 별빛은 점점 부드러워지고, 세상은 아주 조용해졌어요.\n\n들이쉬고… 내쉬고… 한 번 더 천천히. 마음이 잔잔한 호수처럼 고요해져요.\n\n푹 자요, {name아}. 내일 아침 햇살 속에서 다시 만나요. 좋은 꿈 꿔요. ✨'
+  ];
+
+  function buildStory(){
+    const name = ($('s_name').value.trim()) || '우리 아기';
+    const friend = $('s_friend').value;
+    const place = $('s_place').value;
+    const mood = $('s_mood').value;
+    const len = document.querySelector('input[name="s_len"]:checked').value;
+    const placeimg = PLACE_IMG[place] || '';
+    const m = MOOD[mood];
+
+    const parts = [];
+    parts.push(pick(OPENINGS).replace(/{placeimg}/g, placeimg));
+    if (len === 'normal') parts.push(m.scene);
+    parts.push(m.comfort);
+    parts.push(pick(WINDDOWNS));
+
+    return sub(parts.join('\n\n'), name, friend, place);
+  }
+
+  $('makeStory').addEventListener('click', () => {
+    stopSpeak();
+    $('storyText').textContent = buildStory();
+    $('storyBox').classList.add('show');
+    $('storyBox').scrollIntoView({ behavior:'smooth', block:'nearest' });
+  });
+
+  // ---- 읽어주기 (기기 내장 음성 우선) ----
+  let koVoice = null, speakWatch = null;
+  function loadVoices(){
+    const vs = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+    // 가능하면 기기 내장(온디바이스) 한국어 음성을 우선 선택, 없으면 일반 한국어 음성
+    koVoice = vs.find(v => (v.lang||'').toLowerCase().startsWith('ko') && v.localService)
+           || vs.find(v => (v.lang||'').toLowerCase().startsWith('ko')) || null;
+  }
+  if (window.speechSynthesis){
+    loadVoices();
+    speechSynthesis.onvoiceschanged = loadVoices;
+  }
+  function resetSpeakBtn(label){
+    clearTimeout(speakWatch);
+    $('speakBtn').classList.remove('speaking');
+    $('speakBtn').setAttribute('aria-pressed', 'false');
+    $('speakBtn').textContent = label;
+  }
+  function stopSpeak(){
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    resetSpeakBtn('🔊 읽어주기');
+  }
+  $('speakBtn').addEventListener('click', () => {
+    const text = $('storyText').textContent;
+    if (!text) return;
+    if (!window.speechSynthesis){ $('speakBtn').textContent = '이 기기는 읽어주기를 지원하지 않아요'; return; }
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text.replace(/[🌙✨💜]/g,''));
+    u.lang = 'ko-KR'; u.rate = 0.84; u.pitch = 1.06;
+    if (koVoice) u.voice = koVoice;
+    u.onstart = () => clearTimeout(speakWatch);
+    u.onend = () => resetSpeakBtn('🔊 다시 읽어주기');
+    u.onerror = () => resetSpeakBtn('🔊 읽어주기');
+    $('speakBtn').classList.add('speaking');
+    $('speakBtn').setAttribute('aria-pressed', 'true');
+    $('speakBtn').textContent = '🔊 읽는 중…';
+    // 일부 환경에서 음성이 조용히 무시되면 버튼이 '읽는 중'으로 고착되지 않도록 안전장치
+    clearTimeout(speakWatch);
+    speakWatch = setTimeout(() => { if (!speechSynthesis.speaking) resetSpeakBtn('🔊 읽어주기'); }, 2200);
+    speechSynthesis.speak(u);
+  });
+  $('stopBtn').addEventListener('click', stopSpeak);
+  $('copyBtn').addEventListener('click', async () => {
+    const text = $('storyText').textContent; if (!text) return;
+    let ok = true;
+    try { await navigator.clipboard.writeText(text); }
+    catch(e){
+      try { const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+        document.body.appendChild(ta); ta.focus(); ta.select(); ok=document.execCommand('copy'); ta.remove(); }
+      catch(e2){ ok=false; }
+    }
+    const b=$('copyBtn'); const o=b.textContent;
+    b.textContent = ok ? '✓ 복사됨' : '복사 실패'; b.classList.toggle('done', ok);
+    setTimeout(()=>{ b.textContent=o; b.classList.remove('done'); }, 1600);
+  });
+
+  // ---- 루틴 체크 ----
+  const checks = document.querySelectorAll('#checkList input');
+  function updateChecks(){
+    const done = [...checks].filter(c => c.checked).length;
+    $('checkBar').style.width = (done / checks.length * 100) + '%';
+    const msgs = ['천천히 시작해요','좋아요, 시작이 반!','잘하고 있어요','거의 다 왔어요','한 걸음 남았어요','다 했어요! 잘 자요 🌟'];
+    $('checkTxt').textContent = done + ' / ' + checks.length + ' — ' + msgs[done];
+  }
+  checks.forEach(c => c.addEventListener('change', updateChecks));
+
+  // ---- 함께 숨쉬기 ----
+  let breathTimer = null, breathPhase = 0, breathEndsAt = 0;
+  const PHASES = [
+    { label:'들이쉬어요 🌬️', scale:1.6, ms:4000 },
+    { label:'잠깐 멈춰요', scale:1.6, ms:2000 },
+    { label:'천천히 내쉬어요 😮‍💨', scale:1.0, ms:6000 }
+  ];
+  function runPhase(){
+    if (Date.now() >= breathEndsAt){ finishBreath(); return; }
+    const p = PHASES[breathPhase % PHASES.length];
+    const circle = $('breathCircle');
+    circle.style.transitionDuration = (p.ms / 1000) + 's';
+    circle.style.transform = 'scale(' + p.scale + ')';
+    $('breathLabel').textContent = p.label;
+    const left = Math.ceil((breathEndsAt - Date.now()) / 1000);
+    $('breathSub').textContent = '남은 시간 ' + left + '초';
+    breathTimer = setTimeout(() => { breathPhase++; runPhase(); }, p.ms);
+  }
+  function startBreath(){
+    stopBreath();
+    breathEndsAt = Date.now() + 60000; breathPhase = 0;
+    $('breathBtn').textContent = '멈추기';
+    runPhase();
+  }
+  function finishBreath(){
+    stopBreath();
+    $('breathLabel').textContent = '참 잘했어요 💜';
+    $('breathSub').textContent = '마음이 차분해졌나요?';
+  }
+  function stopBreath(silent){
+    if (breathTimer){ clearTimeout(breathTimer); breathTimer = null; }
+    const circle = $('breathCircle');
+    if (circle){ circle.style.transitionDuration = '1s'; circle.style.transform = 'scale(1)'; }
+    const btn = $('breathBtn'); if (btn) btn.textContent = '시작하기';
+    if (!silent && breathEndsAt && Date.now() < breathEndsAt){
+      $('breathLabel').textContent = '준비됐나요?';
+      $('breathSub').textContent = '시작을 누르면 1분 동안 함께해요';
+    }
+    breathEndsAt = 0;
+  }
+  $('breathBtn').addEventListener('click', () => {
+    if (breathTimer) stopBreath(); else startBreath();
+  });
+</script>
+</body>
+</html>
