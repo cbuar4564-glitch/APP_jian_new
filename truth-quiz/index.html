@@ -474,13 +474,27 @@
   ];
 
   const ROUND = 10;
-  let pack = null, deck = [], idx = 0, correct = 0, answered = false, btns = [];
+  let pack = null, deck = [], idx = 0, correct = 0, answered = false, btns = [], curCorrect = 0;
 
   function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+  function cardType(c){ return c.type || pack.type; }     // 전체 랜덤(mix)에선 카드별 타입 사용
+
+  // 모든 묶음 카드를 합치기(타입·분류 태그 부착)
+  function allCards(){
+    const arr = [];
+    PACKS.forEach(p => p.cards.forEach(c => arr.push(Object.assign({}, c, { type: p.type, cat: c.cat || p.title }))));
+    return arr;
+  }
 
   // ── 허브 렌더 ──
   function renderHub(){
     const el = $('packs'); el.innerHTML='';
+    const total = PACKS.reduce((s,p)=>s + p.cards.length, 0);
+    const r = document.createElement('div');           // 🎲 전체 랜덤 (맨 위, 전체 너비)
+    r.className = 'pack'; r.style.gridColumn = '1 / -1';
+    r.innerHTML = `<div class="pe">🎲</div><h3>전체 랜덤</h3><div class="ps">모든 주제 섞어서 풀기</div><span class="pc">${total}문제에서</span>`;
+    r.addEventListener('click', startAll);
+    el.appendChild(r);
     PACKS.forEach(p => {
       const ready = p.cards.length > 0;
       const d = document.createElement('div');
@@ -493,33 +507,38 @@
   }
 
   // ── 안 본 문제 우선으로 라운드 뽑기 (다시 풀어도 새 문제) ──
-  function pickRound(p){
-    const key = 'quizseen_' + p.id;
-    let seen = []; try { seen = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e){}
+  function pickRound(key, cards){
+    const k = 'quizseen_' + key;
+    let seen = []; try { seen = JSON.parse(localStorage.getItem(k) || '[]'); } catch(e){}
     if (!Array.isArray(seen)) seen = [];
-    const all = p.cards.map((_,i)=>i);
+    const all = cards.map((_,i)=>i);
     let unseen = all.filter(i => !seen.includes(i));
-    const n = Math.min(ROUND, p.cards.length);
+    const n = Math.min(ROUND, cards.length);
     if (unseen.length < n){ seen = []; unseen = all.slice(); }    // 다 봤으면 리셋
     const chosen = shuffle(unseen).slice(0, n);
     seen = [...new Set([...seen, ...chosen])];
-    try { localStorage.setItem(key, JSON.stringify(seen)); } catch(e){}
-    return chosen.map(i => p.cards[i]);
+    try { localStorage.setItem(k, JSON.stringify(seen)); } catch(e){}
+    return chosen.map(i => cards[i]);
   }
 
   function show(view){ ['hub','quiz','resultWrap'].forEach(v => $(v).classList.toggle('hide', v!==view)); }
 
   function startPack(p){
-    pack = p; deck = pickRound(p); idx = 0; correct = 0;
+    pack = p; deck = pickRound(p.id, p.cards); idx = 0; correct = 0;
+    show('quiz'); showCard();
+  }
+  function startAll(){
+    pack = { id:'all', title:'전체 랜덤', type:'mix' };
+    deck = pickRound('all', allCards()); idx = 0; correct = 0;
     show('quiz'); showCard();
   }
 
   function showCard(){
     answered = false;
-    const c = deck[idx];
+    const c = deck[idx], t = cardType(c);
     $('cat').textContent = c.cat || pack.title;
-    $('stmt').textContent = (pack.type==='ox') ? c.stmt : c.q;
-    $('ask').textContent = (pack.type==='ox') ? '이 말, 진짜일까요 가짜일까요?' : '알맞은 뜻을 고르세요';
+    $('stmt').textContent = (t==='ox') ? c.stmt : c.q;
+    $('ask').textContent = (t==='ox') ? '이 말, 진짜일까요 가짜일까요?' : '알맞은 뜻을 고르세요';
     $('pcount').textContent = (idx+1) + ' / ' + deck.length;
     $('barFill').style.width = (idx / deck.length * 100) + '%';
     $('reveal').classList.remove('show');
@@ -528,13 +547,16 @@
 
   function renderChoices(c){
     const ch = $('choices'); ch.innerHTML=''; btns=[];
-    if (pack.type==='ox'){
+    if (cardType(c)==='ox'){
       ch.className = 'choices row';
-      btns.push(mkBtn('⭕ 진짜', 'real', () => answer(true)));
-      btns.push(mkBtn('❌ 가짜', 'fake', () => answer(false)));
+      btns.push(mkBtn('⭕ 진짜', 'real', () => answer(0)));
+      btns.push(mkBtn('❌ 가짜', 'fake', () => answer(1)));
+      curCorrect = c.isTrue ? 0 : 1;
     } else {
       ch.className = 'choices col';
-      c.choices.forEach((txt,i) => btns.push(mkBtn(txt, 'mcq', () => answer(i))));
+      const order = shuffle(c.choices.map((_,i)=>i));   // 보기 순서를 매번 섞어 정답 위치 랜덤화
+      curCorrect = order.indexOf(c.answer);
+      order.forEach((orig, disp) => btns.push(mkBtn(c.choices[orig], 'mcq', () => answer(disp))));
     }
     btns.forEach(b => ch.appendChild(b));
   }
@@ -542,22 +564,19 @@
 
   function answer(val){
     if (answered) return; answered = true;
-    const c = deck[idx];
-    let right, correctIdx;
-    if (pack.type==='ox'){ right = (val===c.isTrue); correctIdx = c.isTrue ? 0 : 1; }
-    else { right = (val===c.answer); correctIdx = c.answer; }
+    const c = deck[idx], t = cardType(c);
+    const right = (val === curCorrect);
     if (right) correct++;
-    btns.forEach((b,i) => { b.disabled = true; if (i===correctIdx) b.classList.add('correct'); });
-    if (!right){ const pick = (pack.type==='ox') ? (val?0:1) : val; if (btns[pick]) btns[pick].classList.add('wrong'); }
+    btns.forEach((b,i) => { b.disabled = true; if (i===curCorrect) b.classList.add('correct'); });
+    if (!right && btns[val]) btns[val].classList.add('wrong');
     $('verdict').textContent = right ? '정답! 🎉' : '땡! 🙊';
     $('verdict').className = 'verdict ' + (right ? 'ok' : 'no');
-    if (pack.type==='ox') $('truth').innerHTML = '<b>' + (c.isTrue ? '진짜예요.' : '가짜예요.') + '</b> ' + c.truth;
+    if (t==='ox') $('truth').innerHTML = '<b>' + (c.isTrue ? '진짜예요.' : '가짜예요.') + '</b> ' + c.truth;
     else $('truth').innerHTML = '정답: <b>' + c.choices[c.answer] + '</b>' + (c.explain ? ' — ' + c.explain : '');
     $('reveal').classList.add('show');
     $('barFill').style.width = ((idx+1)/deck.length*100) + '%';
   }
 
-  $('btn' ); // noop
   $('nextBtn').addEventListener('click', () => { idx++; if (idx>=deck.length) showResult(); else showCard(); });
 
   function showResult(){
@@ -573,7 +592,7 @@
     $('rsub').textContent = `[${pack.title}] ${total}개 중 ${wrong}개 틀렸어요`;
   }
 
-  $('againBtn').addEventListener('click', () => startPack(pack));
+  $('againBtn').addEventListener('click', () => { if (pack.id==='all') startAll(); else startPack(pack); });
   $('homeBtn').addEventListener('click', () => { renderHub(); show('hub'); });
   $('shareBtn').addEventListener('click', async () => {
     const total = deck.length, wrong = total - correct;
