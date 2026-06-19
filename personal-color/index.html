@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>퍼스널컬러 옷장 — 셀카로 내 어울리는 색 찾기</title>
+<style>
+  :root{
+    --bg1:#fbf7ff; --bg2:#f3edff; --ink:#2a2440; --sub:#7a6f96; --card:#ffffff;
+    --line:#ece4fb; --accent:#8b5cf6; --accent-d:#7c3aed; --shadow:0 8px 26px rgba(120,80,200,.13);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; color:var(--ink); min-height:100vh;
+    background:radial-gradient(900px 500px at 80% -10%, #e9ddff 0%, transparent 55%), linear-gradient(160deg,var(--bg1),var(--bg2));
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:520px; margin:0 auto; padding:18px 16px 60px;}
+  .backlink{display:inline-block; margin-bottom:8px; color:var(--sub); font-size:12.5px; text-decoration:none;}
+  .backlink:hover{color:var(--accent);}
+  header h1{font-size:22px; margin:2px 0 2px;}
+  header p{margin:0 0 12px; color:var(--sub); font-size:13.5px;}
+  .privacy{background:#f1eaff; border:1px solid var(--line); color:#5b3fa8; font-size:12.5px; border-radius:12px; padding:9px 12px; margin-bottom:14px;}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px; margin-bottom:14px; box-shadow:var(--shadow);}
+  .uploadbtn{
+    display:flex; flex-direction:column; align-items:center; gap:6px; width:100%; padding:26px 16px;
+    border:2px dashed #cbb6f5; border-radius:16px; background:#faf7ff; color:var(--accent-d); cursor:pointer;
+    font-size:15px; font-weight:700;
+  }
+  .uploadbtn .big{font-size:34px;}
+  .uploadbtn small{color:var(--sub); font-weight:500; font-size:12px;}
+  input[type=file]{display:none;}
+
+  .analyzer{display:none;}
+  .analyzer.show{display:block;}
+  .canvaswrap{position:relative; text-align:center;}
+  canvas#photo{max-width:100%; border-radius:14px; cursor:crosshair; touch-action:manipulation;}
+  .hint{font-size:12.5px; color:var(--sub); text-align:center; margin:8px 0 0;}
+  .swatchrow{display:flex; align-items:center; justify-content:center; gap:10px; margin-top:10px; font-size:13px; color:var(--sub);}
+  .sw{width:30px; height:30px; border-radius:8px; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.2);}
+  .retake{margin-top:10px; width:100%; border:1px solid var(--line); background:#faf7ff; color:var(--accent-d); font-weight:700; border-radius:11px; padding:10px; cursor:pointer; font-size:14px;}
+
+  .result{display:none;}
+  .result.show{display:block;}
+  .badge{display:inline-block; font-size:13px; font-weight:800; padding:5px 12px; border-radius:999px; color:#fff; margin-bottom:6px;}
+  .resulttitle{font-size:24px; font-weight:900; margin:2px 0 4px;}
+  .tone{font-size:13.5px; color:var(--sub); margin-bottom:12px;}
+  .palette{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
+  .col{text-align:center;}
+  .col .chip{width:100%; aspect-ratio:1/1; border-radius:12px; border:1px solid rgba(0,0,0,.06); box-shadow:0 2px 6px rgba(0,0,0,.08);}
+  .col .nm{font-size:10.5px; color:var(--sub); margin-top:4px; display:block; word-break:keep-all;}
+  .sec{margin-top:14px;}
+  .sec h3{font-size:13px; margin:0 0 5px; color:var(--ink);}
+  .sec p{margin:0; font-size:13px; color:#544a70;}
+  .avoid{background:#fff5f5; border:1px solid #ffe0e0; border-radius:10px; padding:9px 11px; font-size:12.5px; color:#9a3a3a;}
+  .actions{display:flex; gap:8px; margin-top:14px;}
+  .actions button{flex:1; border:0; border-radius:12px; padding:12px; font-weight:800; font-size:14px; cursor:pointer;}
+  .save{background:var(--accent); color:#fff;}
+  .redo{background:#f3edff; color:var(--accent-d); border:1px solid var(--line);}
+  .notice{margin-top:14px; background:#fff8ec; border:1px solid #fde7c0; color:#8a5a16; font-size:12px; border-radius:12px; padding:10px 12px;}
+  footer{text-align:center; color:#b3a6cf; font-size:11.5px; margin-top:18px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="backlink" href="../index.html">← 다른 앱 보기</a>
+  <header>
+    <h1>🎨 퍼스널컬러 옷장</h1>
+    <p>셀카 한 장으로 나에게 어울리는 색을 찾아드려요.</p>
+  </header>
+  <div class="privacy">🔒 사진은 <b>이 기기 안에서만</b> 분석돼요. 어디에도 업로드·저장되지 않습니다.</div>
+
+  <!-- 업로드 -->
+  <div class="card" id="uploadCard">
+    <label class="uploadbtn" for="file">
+      <span class="big">📸</span>
+      셀카 올리기
+      <small>자연광에서 화장기 적은 얼굴 사진이 가장 정확해요</small>
+    </label>
+    <input type="file" id="file" accept="image/*" />
+  </div>
+
+  <!-- 분석 -->
+  <div class="card analyzer" id="analyzer">
+    <div class="canvaswrap"><canvas id="photo"></canvas></div>
+    <p class="hint">👆 <b>볼(뺨)</b>을 톡 누르면 그 색으로 다시 분석해요</p>
+    <div class="swatchrow">분석한 피부색 <span class="sw" id="swatch"></span></div>
+    <button class="retake" id="retake">다른 사진으로</button>
+  </div>
+
+  <!-- 결과 -->
+  <div class="card result" id="result">
+    <span class="badge" id="badge">결과</span>
+    <div class="resulttitle" id="rtitle">—</div>
+    <div class="tone" id="rtone"></div>
+
+    <div class="sec"><h3>🎨 어울리는 색 팔레트</h3><div class="palette" id="palette"></div></div>
+    <div class="sec"><h3>💡 스타일 팁</h3><p id="tips"></p></div>
+    <div class="sec"><div class="avoid" id="avoid"></div></div>
+
+    <div class="actions">
+      <button class="save" id="saveBtn">팔레트 저장 🖼️</button>
+      <button class="redo" id="redoBtn">다시 찍기</button>
+    </div>
+    <div class="notice">⚠️ 빛·화면·카메라에 따라 결과가 달라질 수 있어요. <b>재미·참고용</b>이며 정확한 진단은 전문가 측정을 권해요.</div>
+  </div>
+
+  <footer>퍼스널컬러 옷장 · 모든 처리는 기기 안에서만 · 재미·참고용 도구</footer>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const SEASONS = {
+    spring: { name:'봄 웜톤', color:'#ff9e7a', tone:'밝고 화사한 따뜻한 색이 잘 어울려요.',
+      tips:'코랄·피치 메이크업, 골드 액세서리, 밝고 생기 있는 느낌으로.',
+      avoid:'탁한 회색·무거운 네이비처럼 칙칙하고 어두운 색은 얼굴이 가라앉아 보여요.',
+      palette:[['#FF9E80','코랄'],['#FFCC80','피치'],['#FFE0B2','살구'],['#FFF3E0','아이보리'],['#C5E1A5','옐로그린'],['#80DEEA','터콰이즈'],['#FFD54F','골드'],['#FFAB91','살몬']] },
+    summer: { name:'여름 쿨톤', color:'#9aa6e0', tone:'부드럽고 시원한 파스텔 색이 잘 어울려요.',
+      tips:'핑크·로즈 메이크업, 실버 액세서리, 맑고 청량한 느낌으로.',
+      avoid:'쨍한 주황·골드처럼 강한 웜 색은 피부가 누렇게 떠 보일 수 있어요.',
+      palette:[['#E1BEE7','라일락'],['#F8BBD0','베이비핑크'],['#B3E5FC','소프트블루'],['#C5CAE9','페리윙클'],['#B2DFDB','민트'],['#F48FB1','로즈'],['#D1C4E9','라벤더'],['#CFD8DC','실버그레이']] },
+    autumn: { name:'가을 웜톤', color:'#c08a57', tone:'차분하고 깊이 있는 따뜻한 색이 잘 어울려요.',
+      tips:'벽돌·브라운 메이크업, 앤틱 골드 액세서리, 고급스럽고 깊은 느낌으로.',
+      avoid:'파스텔·형광색처럼 차갑고 가벼운 색은 겉돌아 보일 수 있어요.',
+      palette:[['#D7A86E','카멜'],['#B5651D','테라코타'],['#827717','올리브'],['#BF360C','브릭'],['#E6A23C','머스타드'],['#6D4C41','초콜릿'],['#A1887F','토프'],['#8D6E63','딥브라운']] },
+    winter: { name:'겨울 쿨톤', color:'#5b6bd6', tone:'선명하고 대비가 강한 시원한 색이 잘 어울려요.',
+      tips:'레드·플럼 메이크업, 실버 액세서리, 또렷하고 시크한 느낌으로.',
+      avoid:'머스타드·베이지처럼 칙칙한 웜 색은 얼굴이 칙칙해 보일 수 있어요.',
+      palette:[['#FFFFFF','퓨어화이트'],['#212121','블랙'],['#1A237E','로얄블루'],['#C2185B','마젠타'],['#880E4F','버건디'],['#00897B','에메랄드'],['#D81B60','핫핑크'],['#B0BEC5','실버']] }
+  };
+
+  function rgbToHsl(r,g,b){
+    r/=255; g/=255; b/=255;
+    const mx=Math.max(r,g,b), mn=Math.min(r,g,b); let h=0, s=0; const l=(mx+mn)/2;
+    if(mx!==mn){ const d=mx-mn; s=l>0.5? d/(2-mx-mn): d/(mx+mn);
+      if(mx===r) h=(g-b)/d+(g<b?6:0); else if(mx===g) h=(b-r)/d+2; else h=(r-g)/d+4; h*=60; }
+    return [h, s, l];
+  }
+
+  // 피부색 평균 RGB → 시즌 분류 (참고용 휴리스틱)
+  function analyze(r,g,b){
+    const [h,s,l] = rgbToHsl(r,g,b);
+    const lum = 0.299*r + 0.587*g + 0.114*b;
+    // 웜/쿨: 노란기(웜) vs 붉은·푸른기(쿨). 색상(hue)이 황금빛 범위거나 R-B 차가 크면 웜.
+    const warm = (h >= 25 && h <= 55) || (r - b) > 48;
+    // 밝기(라이트/딥)
+    const light = lum >= 150;
+    let key;
+    if (warm && light) key='spring';
+    else if (!warm && light) key='summer';
+    else if (warm && !light) key='autumn';
+    else key='winter';
+    return { key, warm, light, lum:Math.round(lum), undertone: warm?'웜(따뜻한 노란빛)':'쿨(시원한 붉은·푸른빛)',
+      depth: light?'밝은 톤':'어두운(깊은) 톤' };
+  }
+  window.pcAnalyze = analyze; // (테스트용)
+
+  // ---- 캔버스/사진 ----
+  const cv = $('photo'), ctx = cv.getContext('2d', { willReadFrequently:true });
+  let imgEl = null, lastSkin = null, lastResult = null;
+
+  function drawBase(markX, markY){
+    if (!imgEl) return;
+    ctx.drawImage(imgEl, 0, 0, cv.width, cv.height);
+    if (markX != null){
+      ctx.beginPath(); ctx.arc(markX, markY, Math.max(8, cv.width*0.025), 0, 2*Math.PI);
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.stroke();
+      ctx.strokeStyle = '#8b5cf6'; ctx.lineWidth = 2; ctx.stroke();
+    }
+  }
+
+  $('file').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    const url = URL.createObjectURL(f);
+    const im = new Image();
+    im.onload = () => {
+      const maxW = 560; const scale = Math.min(1, maxW / im.naturalWidth);
+      cv.width = Math.round(im.naturalWidth * scale);
+      cv.height = Math.round(im.naturalHeight * scale);
+      imgEl = im; drawBase();
+      $('uploadCard').style.display = 'none';
+      $('analyzer').classList.add('show');
+      // 초기 자동 분석: 중앙 약간 아래(보통 얼굴/볼 위치)
+      sampleAt(cv.width/2, cv.height*0.55);
+      URL.revokeObjectURL(url);
+    };
+    im.onerror = () => alert('사진을 열 수 없어요. 다른 사진을 시도해 주세요.');
+    im.src = url;
+  });
+
+  function clickToCanvas(e){
+    const rect = cv.getBoundingClientRect();
+    const px = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const py = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    return [Math.round(px * cv.width / rect.width), Math.round(py * cv.height / rect.height)];
+  }
+  cv.addEventListener('click', e => { const [x,y] = clickToCanvas(e); sampleAt(x,y); });
+
+  function sampleAt(x, y){
+    if (!imgEl) return;
+    const rr = Math.max(8, Math.round(cv.width * 0.04));
+    const sx = Math.max(0, x-rr), sy = Math.max(0, y-rr);
+    const sw = Math.min(cv.width-sx, rr*2), sh = Math.min(cv.height-sy, rr*2);
+    if (sw<=0 || sh<=0) return;
+    const data = ctx.getImageData(sx, sy, sw, sh).data;
+    let R=0,G=0,B=0,c=0, R2=0,G2=0,B2=0,c2=0;
+    for (let i=0;i<data.length;i+=4){
+      const r=data[i], g=data[i+1], b=data[i+2];
+      const lum = 0.299*r+0.587*g+0.114*b;
+      R2+=r;G2+=g;B2+=b;c2++;
+      if (lum<35 || lum>245) continue;          // 그림자·하이라이트 제외
+      if (!(r>g && g>=b*0.85)) continue;          // 대략적 피부톤(R>G>~B) 우선
+      R+=r;G+=g;B+=b;c++;
+    }
+    let r,g,b;
+    if (c >= 6){ r=R/c; g=G/c; b=B/c; }
+    else if (c2 > 0){ r=R2/c2; g=G2/c2; b=B2/c2; }  // 폴백: 영역 전체 평균
+    else return;
+    r=Math.round(r); g=Math.round(g); b=Math.round(b);
+    lastSkin = [r,g,b];
+    $('swatch').style.background = `rgb(${r},${g},${b})`;
+    drawBase(x, y);
+    showResult(r,g,b);
+  }
+
+  function showResult(r,g,b){
+    const a = analyze(r,g,b);
+    lastResult = a;
+    const s = SEASONS[a.key];
+    $('badge').textContent = s.name; $('badge').style.background = s.color;
+    $('rtitle').textContent = s.name;
+    $('rtone').textContent = `${a.undertone} · ${a.depth} — ${s.tone}`;
+    const pal = $('palette'); pal.innerHTML = '';
+    s.palette.forEach(([hex,nm]) => {
+      const col = document.createElement('div'); col.className='col';
+      const chip = document.createElement('div'); chip.className='chip'; chip.style.background=hex;
+      const lab = document.createElement('span'); lab.className='nm'; lab.textContent=nm;
+      col.appendChild(chip); col.appendChild(lab); pal.appendChild(col);
+    });
+    $('tips').textContent = s.tips;
+    $('avoid').innerHTML = '<b>피하면 좋은 색:</b> ' + s.avoid;
+    $('result').classList.add('show');
+    try { localStorage.setItem('pc_last', JSON.stringify({ key:a.key, skin:[r,g,b] })); } catch(e){}
+  }
+
+  $('retake').addEventListener('click', resetAll);
+  $('redoBtn').addEventListener('click', resetAll);
+  function resetAll(){
+    imgEl = null; lastSkin = null;
+    $('analyzer').classList.remove('show'); $('result').classList.remove('show');
+    $('uploadCard').style.display = ''; $('file').value = '';
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  // ---- 팔레트 카드 저장 ----
+  $('saveBtn').addEventListener('click', () => {
+    if (!lastResult) return;
+    const s = SEASONS[lastResult.key];
+    const W=720, H=900, oc=document.createElement('canvas'); oc.width=W; oc.height=H;
+    const o=oc.getContext('2d');
+    o.fillStyle='#faf7ff'; o.fillRect(0,0,W,H);
+    o.fillStyle='#2a2440'; o.textAlign='center';
+    o.font='800 46px -apple-system, sans-serif'; o.fillText('🎨 나의 퍼스널컬러', W/2, 90);
+    o.fillStyle=s.color; o.font='900 60px -apple-system, sans-serif'; o.fillText(s.name, W/2, 175);
+    o.fillStyle='#7a6f96'; o.font='500 24px -apple-system, sans-serif'; o.fillText(s.tone, W/2, 220);
+    // 팔레트 그리드
+    const cols=4, sz=140, gap=22, startX=(W-(cols*sz+(cols-1)*gap))/2, startY=290;
+    s.palette.forEach(([hex,nm], i)=>{
+      const cx=startX+(i%cols)*(sz+gap), cy=startY+Math.floor(i/cols)*(sz+58);
+      o.fillStyle=hex; o.strokeStyle='rgba(0,0,0,.08)';
+      roundRect(o, cx, cy, sz, sz, 18); o.fill(); o.stroke();
+      o.fillStyle='#544a70'; o.font='500 20px -apple-system, sans-serif'; o.fillText(nm, cx+sz/2, cy+sz+30);
+    });
+    o.fillStyle='#b3a6cf'; o.font='500 20px -apple-system, sans-serif';
+    o.fillText('퍼스널컬러 옷장 · 재미·참고용', W/2, H-40);
+    const a=document.createElement('a'); a.download='나의_퍼스널컬러.png'; a.href=oc.toDataURL('image/png'); a.click();
+  });
+  function roundRect(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+</script>
+</body>
+</html>
