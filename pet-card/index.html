@@ -2,445 +2,571 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>🐾 우리 아이 자랑카드 — 펫 카드 메이커</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>🐾 펫 꾸미기 스튜디오 — 사진 찍고 귀엽게 꾸미기</title>
 <style>
   :root{
-    --ink:#28303d; --sub:#6b7686; --line:#e6ebf2; --brand:#ff7aa2; --brand2:#7a9bff;
-    --bg1:#fff1f5; --bg2:#eef3ff;
+    --ink:#28303d; --sub:#6b7686; --line:#e6ebf2; --brand:#ff5e8e; --brand2:#7a9bff;
+    --bg1:#fff1f5; --bg2:#eef3ff; --pal:#fff;
   }
-  *{box-sizing:border-box}
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;}
   body{
-    margin:0; min-height:100vh; color:var(--ink);
+    min-height:100vh; color:var(--ink);
     background:linear-gradient(160deg,var(--bg1),var(--bg2));
     font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
-    line-height:1.55; -webkit-text-size-adjust:100%;
+    line-height:1.5; -webkit-text-size-adjust:100%;
   }
-  .wrap{max-width:560px; margin:0 auto; padding:24px 16px 56px;}
-  .top{display:flex; align-items:center; gap:8px; margin-bottom:4px;}
+  .wrap{max-width:560px; margin:0 auto; padding:18px 14px 48px;}
+  .top{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
   .back{font-size:13px; color:var(--sub); text-decoration:none;}
-  h1{font-size:22px; margin:6px 0 2px;}
-  .lead{color:var(--sub); font-size:13.5px; margin:0 0 18px;}
+  h1{font-size:19px; margin:2px 0;}
+  .lead{color:var(--sub); font-size:12.5px; margin:0 0 12px;}
 
-  .preview{
-    background:#fff; border:1px solid var(--line); border-radius:20px; padding:14px;
-    box-shadow:0 8px 26px rgba(40,60,110,.08); margin-bottom:18px;
-  }
-  canvas{ width:100%; height:auto; display:block; border-radius:12px; }
-  .ph{
-    aspect-ratio:4/5; width:100%; border-radius:12px; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:8px; color:#c6cdda;
-    background:repeating-linear-gradient(135deg,#f6f8fc,#f6f8fc 14px,#f1f4fa 14px,#f1f4fa 28px);
-    border:2px dashed #dde3ee; font-size:14px;
-  }
-  .ph .big{font-size:46px;}
+  /* ---- 무대(편집 영역) ---- */
+  .stagewrap{ background:#fff; border:1px solid var(--line); border-radius:18px; padding:10px;
+    box-shadow:0 8px 26px rgba(40,60,110,.08); margin-bottom:12px; }
+  .stage{ position:relative; width:100%; aspect-ratio:4/5; background:#fff; border-radius:12px;
+    overflow:hidden; touch-action:none; }
+  .slot{ position:absolute; padding:5px; overflow:hidden; }
+  .slot .inner{ width:100%; height:100%; border-radius:10px; overflow:hidden; background:#f1f4fa;
+    display:flex; align-items:center; justify-content:center; }
+  .slot img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .slot .empty{ display:flex; flex-direction:column; align-items:center; gap:4px; color:#aab3c4;
+    font-size:12px; border:2px dashed #d8dfea; border-radius:10px; width:100%; height:100%;
+    align-items:center; justify-content:center; cursor:pointer; }
+  .slot .empty .e{ font-size:30px; }
 
-  .card{
-    background:#fff; border:1px solid var(--line); border-radius:18px; padding:18px;
-    box-shadow:0 6px 20px rgba(40,60,110,.06); margin-bottom:14px;
-  }
-  .card h2{font-size:14px; margin:0 0 12px; color:var(--sub); font-weight:700; letter-spacing:.2px;}
-  label{display:block; font-size:13px; color:var(--sub); margin:0 0 6px;}
-  input[type=text], textarea{
-    width:100%; border:1px solid var(--line); border-radius:12px; padding:11px 13px;
-    font-size:15px; font-family:inherit; color:var(--ink); background:#fbfcfe;
-  }
-  input[type=text]:focus, textarea:focus{outline:none; border-color:var(--brand);}
-  textarea{resize:none; min-height:54px;}
-  .field{margin-bottom:13px;}
-  .row{display:flex; gap:10px;}
-  .row .field{flex:1;}
+  .layer{ position:absolute; transform:translate(-50%,-50%) rotate(0rad) scale(1);
+    transform-origin:center; cursor:grab; touch-action:none; --s:1; z-index:5; }
+  .layer .c{ font-size:48px; line-height:1; white-space:nowrap; user-select:none;
+    -webkit-user-select:none; filter:drop-shadow(0 2px 3px rgba(0,0,0,.25)); }
+  .layer.txt .c{ font-weight:800; filter:none; text-shadow:0 2px 6px rgba(0,0,0,.28); }
+  .layer.sel{ outline:2px dashed var(--brand); outline-offset:6px; }
+  .layer .h{ position:absolute; width:26px; height:26px; border-radius:50%; background:#fff;
+    border:1.5px solid var(--brand); display:none; align-items:center; justify-content:center;
+    font-size:14px; color:var(--brand); cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.2); }
+  .layer.sel .h{ display:flex; }
+  .layer .del{ top:0; left:0; transform:translate(-50%,-50%) scale(calc(1/var(--s))); }
+  .layer .tf{ bottom:0; right:0; transform:translate(50%,50%) scale(calc(1/var(--s))); cursor:nwse-resize; }
 
-  .chips{display:flex; flex-wrap:wrap; gap:8px;}
-  .chip{
-    border:1.5px solid var(--line); background:#fbfcfe; color:var(--ink);
-    border-radius:12px; padding:9px 13px; font-size:13.5px; cursor:pointer; user-select:none;
-    transition:.12s; font-family:inherit;
-  }
+  /* ---- 패널 ---- */
+  .panel{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:13px 13px;
+    box-shadow:0 6px 18px rgba(40,60,110,.06); margin-bottom:11px; }
+  .panel h2{ font-size:12.5px; margin:0 0 10px; color:var(--sub); font-weight:700; }
+  .chips{ display:flex; flex-wrap:wrap; gap:7px; }
+  .chip{ border:1.5px solid var(--line); background:#fbfcfe; color:var(--ink); border-radius:11px;
+    padding:8px 12px; font-size:13px; cursor:pointer; user-select:none; transition:.12s; font-family:inherit; }
   .chip[aria-pressed="true"]{ border-color:var(--brand); background:#fff0f5; color:#d63b6e; font-weight:700; }
 
-  .themes{display:flex; flex-wrap:wrap; gap:10px;}
-  .sw{
-    width:38px; height:38px; border-radius:50%; cursor:pointer; border:3px solid #fff;
-    box-shadow:0 0 0 1.5px var(--line); transition:.12s;
-  }
-  .sw[aria-pressed="true"]{ box-shadow:0 0 0 3px var(--brand); transform:scale(1.06); }
+  .stickbar{ display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; -webkit-overflow-scrolling:touch; }
+  .catbtn{ flex:0 0 auto; }
+  .stickers{ display:grid; grid-template-columns:repeat(8,1fr); gap:4px; margin-top:10px; }
+  @media(max-width:430px){ .stickers{ grid-template-columns:repeat(7,1fr);} }
+  .sbtn{ font-size:25px; padding:6px 0; border:none; background:#f7f9fc; border-radius:10px; cursor:pointer; line-height:1; }
+  .sbtn:active{ background:#ffe6ee; }
 
-  .slider{display:flex; align-items:center; gap:10px;}
-  input[type=range]{flex:1; accent-color:var(--brand);}
+  .txtrow{ display:flex; gap:8px; margin-bottom:10px; }
+  .txtrow input[type=text]{ flex:1; border:1px solid var(--line); border-radius:11px; padding:10px 12px;
+    font-size:15px; font-family:inherit; background:#fbfcfe; }
+  .txtrow input[type=text]:focus{ outline:none; border-color:var(--brand); }
+  .addbtn{ border:none; background:var(--brand); color:#fff; border-radius:11px; padding:0 16px;
+    font-weight:700; font-size:14px; cursor:pointer; }
+  .swatches{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .sw{ width:30px; height:30px; border-radius:50%; cursor:pointer; border:2px solid #fff; box-shadow:0 0 0 1.5px var(--line); }
+  .sw[aria-pressed="true"]{ box-shadow:0 0 0 3px var(--brand); transform:scale(1.08); }
+  .sw.custom{ display:flex; align-items:center; justify-content:center; font-size:14px; background:conic-gradient(red,orange,yellow,lime,aqua,blue,magenta,red); }
+  input[type=color]{ position:absolute; width:1px; height:1px; opacity:0; }
 
-  .actions{display:flex; gap:10px; margin-top:4px;}
-  .btn{
-    flex:1; border:none; border-radius:14px; padding:15px; font-size:15px; font-weight:700;
-    cursor:pointer; font-family:inherit; transition:.12s;
-  }
-  .btn.primary{ background:linear-gradient(135deg,var(--brand),#ff5e8e); color:#fff; box-shadow:0 6px 16px rgba(255,94,142,.32); }
+  .actions{ display:flex; gap:9px; }
+  .btn{ flex:1; border:none; border-radius:13px; padding:14px; font-size:14.5px; font-weight:700;
+    cursor:pointer; font-family:inherit; transition:.12s; }
+  .btn.primary{ background:linear-gradient(135deg,var(--brand),#ff4f86); color:#fff; box-shadow:0 6px 16px rgba(255,79,134,.3); }
   .btn.ghost{ background:#fff; color:var(--ink); border:1.5px solid var(--line); }
-  .btn:active{transform:translateY(1px);}
-  .btn:disabled{opacity:.5; cursor:default; box-shadow:none;}
+  .btn.mini{ flex:0 0 auto; padding:14px 16px; background:#fff; color:var(--sub); border:1.5px solid var(--line); }
+  .btn:active{ transform:translateY(1px); }
 
-  .filebtn{
-    display:flex; align-items:center; justify-content:center; gap:8px; width:100%;
-    border:1.5px dashed #d3b3c4; background:#fff6fa; color:#c2466f; border-radius:14px;
-    padding:14px; font-size:14.5px; font-weight:700; cursor:pointer;
-  }
-  input[type=file]{display:none;}
+  .hint{ font-size:11.5px; color:var(--sub); margin-top:8px; text-align:center; }
+  .privacy{ margin-top:12px; font-size:11.5px; color:var(--sub); background:#fff; border:1px solid var(--line);
+    border-radius:13px; padding:11px 13px; text-align:center; }
+  footer{ text-align:center; color:var(--sub); font-size:11px; margin-top:12px; }
 
-  .note{font-size:11.5px; color:var(--sub); margin-top:6px;}
-  .privacy{
-    margin-top:16px; font-size:12px; color:var(--sub); background:#fff; border:1px solid var(--line);
-    border-radius:14px; padding:12px 14px; text-align:center;
-  }
-  footer{text-align:center; color:var(--sub); font-size:11px; margin-top:16px;}
-  .hint{font-size:11.5px; color:var(--sub); margin:8px 0 0;}
+  /* ---- 모달 ---- */
+  .modal{ position:fixed; inset:0; background:rgba(20,24,34,.6); display:none; align-items:center;
+    justify-content:center; z-index:50; padding:18px; }
+  .modal.on{ display:flex; }
+  .sheet{ background:#fff; border-radius:18px; padding:18px; width:100%; max-width:380px; text-align:center; }
+  .sheet h3{ margin:0 0 14px; font-size:16px; }
+  .sheet .row{ display:flex; gap:10px; }
+  .sheet .big{ flex:1; border:1.5px solid var(--line); border-radius:14px; padding:18px 10px; font-size:14px;
+    font-weight:700; background:#fbfcfe; cursor:pointer; }
+  .sheet .big .e{ font-size:28px; display:block; margin-bottom:4px; }
+  .sheet .close{ margin-top:12px; background:none; border:none; color:var(--sub); font-size:13px; cursor:pointer; }
+  .cammodal .cambox{ background:#000; border-radius:14px; overflow:hidden; position:relative; }
+  .cammodal video{ width:100%; display:block; max-height:60vh; object-fit:cover; background:#000; }
+  .cambtns{ display:flex; gap:10px; margin-top:12px; align-items:center; }
+  .shutter{ flex:1; background:var(--brand); color:#fff; border:none; border-radius:13px; padding:15px; font-size:15px; font-weight:700; cursor:pointer; }
+  .camerr{ color:#c2466f; font-size:13px; padding:20px 8px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a class="back" href="../index.html">← 앱 모음</a></div>
-  <h1>🐾 우리 아이 자랑카드</h1>
-  <p class="lead">사진 한 장으로 예쁜 자랑 카드를 만들어 인스타·카톡에 자랑해요. 사진은 폰을 떠나지 않아요.</p>
+  <div class="top">
+    <a class="back" href="../index.html">← 앱 모음</a>
+    <span style="font-size:11.5px;color:var(--sub)">🔒 사진은 폰 안에서만</span>
+  </div>
+  <h1>🐾 펫 꾸미기 스튜디오</h1>
+  <p class="lead">카메라로 찍거나 앨범에서 골라 → 스티커·글자·필터로 귀엽게 꾸미고 자랑해요.</p>
 
-  <!-- 미리보기 -->
-  <div class="preview">
-    <div id="ph" class="ph"><div class="big">🐶</div>사진을 올리면 카드가 여기 보여요</div>
-    <canvas id="cv" width="1080" height="1350" style="display:none"></canvas>
+  <!-- 무대 -->
+  <div class="stagewrap">
+    <div class="stage" id="stage"></div>
   </div>
 
-  <!-- 사진 -->
-  <div class="card">
-    <h2>1. 사진</h2>
-    <label class="filebtn" for="file">📷 반려동물 사진 올리기</label>
-    <input type="file" id="file" accept="image/*" />
-    <div class="field" id="posWrap" style="display:none; margin-top:14px;">
-      <label>사진 위치 (위아래로 맞추기)</label>
-      <div class="slider">⬆️<input type="range" id="pos" min="0" max="100" value="50" />⬇️</div>
-    </div>
-  </div>
-
-  <!-- 카드 종류 -->
-  <div class="card">
-    <h2>2. 카드 종류</h2>
-    <div class="chips" id="types"></div>
-  </div>
-
-  <!-- 내용 -->
-  <div class="card">
-    <h2>3. 내용</h2>
-    <div class="field">
-      <label>이름</label>
-      <input type="text" id="name" maxlength="14" placeholder="예: 콩이" />
-    </div>
-    <div class="row">
-      <div class="field">
-        <label>종류 (선택)</label>
-        <input type="text" id="breed" maxlength="16" placeholder="예: 포메라니안" />
+  <!-- 비율 / 칸 -->
+  <div class="panel">
+    <h2>틀</h2>
+    <div style="display:flex; gap:16px; flex-wrap:wrap;">
+      <div>
+        <div style="font-size:11px;color:var(--sub);margin-bottom:6px;">비율</div>
+        <div class="chips" id="ratios"></div>
       </div>
-      <div class="field">
-        <label>나이 (선택)</label>
-        <input type="text" id="age" maxlength="12" placeholder="예: 3살" />
+      <div>
+        <div style="font-size:11px;color:var(--sub);margin-bottom:6px;">사진 칸 (콜라주)</div>
+        <div class="chips" id="layouts"></div>
       </div>
     </div>
-    <div class="field" style="margin-bottom:0;">
-      <label>한마디 (선택)</label>
-      <textarea id="msg" maxlength="40" placeholder="예: 세상에서 제일 귀여운 우리 강아지 💕"></textarea>
+  </div>
+
+  <!-- 필터 -->
+  <div class="panel">
+    <h2>필터</h2>
+    <div class="chips" id="filters"></div>
+  </div>
+
+  <!-- 스티커 -->
+  <div class="panel">
+    <h2>스티커 — 눌러서 붙이고, 손으로 옮기고 크기·회전</h2>
+    <div class="stickbar" id="cats"></div>
+    <div class="stickers" id="stickers"></div>
+  </div>
+
+  <!-- 글자 -->
+  <div class="panel">
+    <h2>글자</h2>
+    <div class="txtrow">
+      <input type="text" id="txtin" maxlength="22" placeholder="예: 콩이 ♥ 3살" />
+      <button class="addbtn" id="addtxt">추가</button>
     </div>
+    <div style="font-size:11px;color:var(--sub);margin-bottom:7px;">글자 색</div>
+    <div class="swatches" id="swatches"></div>
   </div>
 
-  <!-- 꾸미기 -->
-  <div class="card">
-    <h2>4. 꾸미기</h2>
-    <label>테마 색</label>
-    <div class="themes" id="themes" style="margin-bottom:14px;"></div>
-    <label>스티커</label>
-    <div class="chips" id="stickers"></div>
-  </div>
-
-  <!-- 저장/공유 -->
-  <div class="card">
-    <h2>5. 저장 & 자랑하기</h2>
+  <!-- 저장 -->
+  <div class="panel">
+    <h2>저장 & 자랑하기</h2>
     <div class="actions">
-      <button class="btn ghost" id="dl" disabled>📥 저장</button>
-      <button class="btn primary" id="share" disabled>📤 공유하기</button>
+      <button class="btn mini" id="reset">↺</button>
+      <button class="btn ghost" id="dl">📥 저장</button>
+      <button class="btn primary" id="share">📤 공유</button>
     </div>
-    <p class="hint">저장한 이미지를 인스타그램·카카오톡에 올려서 자랑하면 돼요. (공유가 안 보이면 저장 후 직접 올려요)</p>
+    <p class="hint">저장한 이미지를 인스타그램·카카오톡에 올려 자랑하면 돼요.</p>
   </div>
 
-  <div class="privacy">🔒 사진과 내용은 <b>이 기기 안에서만</b> 카드로 만들어집니다. 어디에도 전송·저장하지 않아요.</div>
-  <footer>우리 아이 자랑카드 · 생활 불편 해소 MVP · 온디바이스</footer>
+  <div class="privacy">🔒 카메라·사진·글자 모두 <b>이 기기 안에서만</b> 처리됩니다. 어디에도 전송·저장하지 않아요.</div>
+  <footer>펫 꾸미기 스튜디오 · 생활 불편 해소 MVP · 온디바이스</footer>
 </div>
+
+<!-- 사진 넣기 선택 -->
+<div class="modal" id="chooser">
+  <div class="sheet">
+    <h3>이 칸에 사진 넣기</h3>
+    <div class="row">
+      <button class="big" id="pickCam"><span class="e">📷</span>카메라로 찍기</button>
+      <button class="big" id="pickAlbum"><span class="e">🖼</span>앨범에서 고르기</button>
+    </div>
+    <button class="close" id="chooserClose">닫기</button>
+  </div>
+</div>
+
+<!-- 카메라 -->
+<div class="modal cammodal" id="cam">
+  <div class="sheet">
+    <h3>📷 카메라</h3>
+    <div class="cambox"><video id="vid" playsinline muted></video></div>
+    <div id="camErrBox"></div>
+    <div class="cambtns">
+      <button class="btn mini" id="flip">🔄 전환</button>
+      <button class="shutter" id="snap">● 찍기</button>
+    </div>
+    <button class="close" id="camClose">닫기</button>
+  </div>
+</div>
+
+<input type="file" id="file" accept="image/*" style="display:none" />
 
 <script>
 (function(){
   "use strict";
-  var cv = document.getElementById('cv');
-  var ctx = cv.getContext('2d');
-  var ph = document.getElementById('ph');
-  var W = 1080, H = 1350;
+  var stage = document.getElementById('stage');
 
-  var img = null;          // loaded Image
-  var posY = 0.5;          // photo vertical framing 0..1
+  // ---------- 상태 ----------
+  var RATIOS = [ {id:'4/5',label:'4:5'}, {id:'1/1',label:'1:1'}, {id:'9/16',label:'9:16'} ];
+  var curRatio = '4/5';
+  var LAYOUTS = {
+    '1':[{x:0,y:0,w:1,h:1}],
+    '2':[{x:0,y:0,w:.5,h:1},{x:.5,y:0,w:.5,h:1}],
+    '3':[{x:0,y:0,w:1,h:1/3},{x:0,y:1/3,w:1,h:1/3},{x:0,y:2/3,w:1,h:1/3}],
+    '4':[{x:0,y:0,w:.5,h:.5},{x:.5,y:0,w:.5,h:.5},{x:0,y:.5,w:.5,h:.5},{x:.5,y:.5,w:.5,h:.5}]
+  };
+  var LAYOUT_LABELS = { '1':'한 장', '2':'2칸', '3':'3칸', '4':'4칸' };
+  var curLayout = '1';
+  var slotImgs = [];   // Image objects per slot index
 
-  // ---- 카드 종류 ----
-  var TYPES = [
-    { id:'profile', label:'프로필',     badge:'PROFILE',     deco:'paw'   },
-    { id:'birthday',label:'🎂 생일',     badge:'HAPPY BIRTHDAY', deco:'party' },
-    { id:'family',  label:'가족 소개',   badge:'OUR FAMILY',  deco:'heart' },
-    { id:'today',   label:'오늘의 한 컷',badge:"TODAY'S CUT", deco:'star'  }
+  var FILTERS = [
+    {id:'none', label:'원본', css:'none'},
+    {id:'bright', label:'밝게', css:'brightness(1.12) saturate(1.06)'},
+    {id:'warm', label:'따뜻', css:'sepia(.25) saturate(1.3) brightness(1.05) hue-rotate(-10deg)'},
+    {id:'cool', label:'시원', css:'saturate(1.12) brightness(1.03) hue-rotate(12deg)'},
+    {id:'mono', label:'흑백', css:'grayscale(1) contrast(1.06)'},
+    {id:'vintage', label:'빈티지', css:'sepia(.5) contrast(.95) brightness(1.05) saturate(1.2)'},
+    {id:'pop', label:'선명', css:'contrast(1.2) saturate(1.25)'}
   ];
-  var curType = 'profile';
+  var curFilter = 'none';
 
-  // ---- 테마 ----
-  var THEMES = [
-    { id:'pink',  bg:['#ffd9e6','#ffeef4'], card:'#ffffff', ink:'#3a2530', sub:'#a86b81', accent:'#ff5e8e' },
-    { id:'sky',   bg:['#d6e6ff','#eef4ff'], card:'#ffffff', ink:'#22324d', sub:'#5d7aa6', accent:'#3f7bff' },
-    { id:'cream', bg:['#ffeccf','#fff7ea'], card:'#ffffff', ink:'#4a3a23', sub:'#a8855a', accent:'#f0973a' },
-    { id:'mint',  bg:['#cdf0e3','#ecfbf4'], card:'#ffffff', ink:'#1f4338', sub:'#4f9082', accent:'#22b894' },
-    { id:'lilac', bg:['#e4d9ff','#f3eeff'], card:'#ffffff', ink:'#322353', sub:'#7e6bb0', accent:'#8a5cff' },
-    { id:'dark',  bg:['#2b2f3a','#3b4150'], card:'#222732', ink:'#f2f4f8', sub:'#aab2c2', accent:'#ff7aa2' }
+  var STICKER_CATS = [
+    {id:'fav', label:'⭐ 인기', items:['🐾','❤️','✨','👑','🎀','😍','🦴','🌸']},
+    {id:'hat', label:'👑 모자', items:['👑','🎩','🧢','🎀','🪖','🎓','🤠','🎄']},
+    {id:'glass', label:'🕶️ 안경', items:['🕶️','👓','🥽','😎','🤓','🧐']},
+    {id:'heart', label:'❤️ 하트', items:['❤️','🧡','💛','💚','💙','💜','🤍','💕','💖','💗','💞','💝']},
+    {id:'spark', label:'✨ 반짝', items:['✨','⭐','🌟','💫','🌈','☀️','🌙','⚡','🔆','💥']},
+    {id:'face', label:'😻 표정', items:['😍','🥰','😻','😺','🐶','🐱','👅','😇','🥹','😆','🫶','🙈']},
+    {id:'talk', label:'💬 말풍선', items:['💬','💭','❗','❓','‼️','💢','❣️','🔥','💯','✔️']},
+    {id:'food', label:'🦴 간식', items:['🦴','🍖','🍗','🐟','🍪','🧀','🥩','🍦','🥕','🍰']},
+    {id:'flower', label:'🌸 꽃', items:['🌸','🌺','🌷','🌼','🌻','🌹','🍀','🌿','🪻','🏵️']},
+    {id:'party', label:'🎉 파티', items:['🎉','🎊','🎈','🎂','🎁','🥳','🎵','🎶','🪅','🍾']}
   ];
-  var curTheme = THEMES[0];
+  var curCat = 'fav';
 
-  // ---- 스티커 ----
-  var STICKERS = [
-    { id:'paw',   emoji:'🐾', label:'🐾 발바닥' },
-    { id:'heart', emoji:'❤️', label:'❤️ 하트' },
-    { id:'star',  emoji:'⭐', label:'⭐ 별' },
-    { id:'flower',emoji:'🌸', label:'🌸 꽃' }
-  ];
-  var sticker = { paw:true, heart:false, star:false, flower:false };
+  var TEXTCOLORS = ['#ffffff','#28303d','#ff5e8e','#ff3b3b','#ff9f1c','#ffd60a','#2ec4b6','#3f7bff','#8a5cff','#000000'];
+  var curColor = '#ffffff';
+
+  var layers = [];   // {id,type:'emoji'|'text',content,x,y,scale,rot,color,el}
+  var nextId = 1;
+  var selected = null;
+  var topZ = 10;
 
   // ---------- UI 빌드 ----------
-  var typesBox = document.getElementById('types');
-  TYPES.forEach(function(t){
-    var b = document.createElement('button');
-    b.className = 'chip'; b.textContent = t.label;
-    b.setAttribute('aria-pressed', t.id === curType ? 'true':'false');
-    b.onclick = function(){
-      curType = t.id;
-      [].forEach.call(typesBox.children, function(c,i){ c.setAttribute('aria-pressed', TYPES[i].id===curType?'true':'false'); });
-      draw();
-    };
-    typesBox.appendChild(b);
-  });
-
-  var themesBox = document.getElementById('themes');
-  THEMES.forEach(function(t){
-    var b = document.createElement('button');
-    b.className = 'sw';
-    b.style.background = 'linear-gradient(135deg,'+t.bg[0]+','+t.bg[1]+')';
-    b.setAttribute('aria-label', t.id);
-    b.setAttribute('aria-pressed', t.id===curTheme.id?'true':'false');
-    b.onclick = function(){
-      curTheme = t;
-      [].forEach.call(themesBox.children, function(c,i){ c.setAttribute('aria-pressed', THEMES[i].id===curTheme.id?'true':'false'); });
-      draw();
-    };
-    themesBox.appendChild(b);
-  });
-
-  var stickBox = document.getElementById('stickers');
-  STICKERS.forEach(function(s){
-    var b = document.createElement('button');
-    b.className = 'chip'; b.textContent = s.label;
-    b.setAttribute('aria-pressed', sticker[s.id]?'true':'false');
-    b.onclick = function(){
-      sticker[s.id] = !sticker[s.id];
-      b.setAttribute('aria-pressed', sticker[s.id]?'true':'false');
-      draw();
-    };
-    stickBox.appendChild(b);
-  });
-
-  // 입력 → 다시 그리기
-  ['name','breed','age','msg'].forEach(function(id){
-    document.getElementById(id).addEventListener('input', draw);
-  });
-  var posEl = document.getElementById('pos');
-  posEl.addEventListener('input', function(){ posY = posEl.value/100; draw(); });
-
-  // 사진 로드 (기기 내에서만 처리)
-  document.getElementById('file').addEventListener('change', function(e){
-    var f = e.target.files && e.target.files[0];
-    if(!f) return;
-    var rd = new FileReader();
-    rd.onload = function(ev){
-      var im = new Image();
-      im.onload = function(){
-        img = im;
-        document.getElementById('posWrap').style.display = 'block';
-        ph.style.display = 'none';
-        cv.style.display = 'block';
-        document.getElementById('dl').disabled = false;
-        document.getElementById('share').disabled = false;
-        draw();
+  function buildChips(boxId, arr, getId, getLabel, cur, onPick){
+    var box = document.getElementById(boxId); box.innerHTML='';
+    arr.forEach(function(it){
+      var b=document.createElement('button'); b.className='chip';
+      b.textContent=getLabel(it); b.setAttribute('aria-pressed', getId(it)===cur?'true':'false');
+      b.onclick=function(){
+        cur=getId(it);
+        [].forEach.call(box.children,function(c,i){ c.setAttribute('aria-pressed', getId(arr[i])===cur?'true':'false'); });
+        onPick(getId(it));
       };
-      im.src = ev.target.result;
-    };
-    rd.readAsDataURL(f);
-  });
-
-  // ---------- 캔버스 그리기 ----------
-  function rr(x,y,w,h,r){
-    ctx.beginPath();
-    ctx.moveTo(x+r,y);
-    ctx.arcTo(x+w,y,x+w,y+h,r);
-    ctx.arcTo(x+w,y+h,x,y+h,r);
-    ctx.arcTo(x,y+h,x,y,r);
-    ctx.arcTo(x,y,x+w,y,r);
-    ctx.closePath();
-  }
-  function drawCover(im,x,y,w,h,oy){
-    var ir = im.width/im.height, rt = w/h, sw,sh,sx,sy;
-    if(ir > rt){ sh = im.height; sw = sh*rt; sx = (im.width-sw)/2; sy = 0; }
-    else { sw = im.width; sh = sw/rt; sx = 0; sy = (im.height-sh)*oy; }
-    ctx.drawImage(im, sx,sy,sw,sh, x,y,w,h);
-  }
-  function wrap(text, max, maxLines){
-    var out=[], line='';
-    for(var i=0;i<text.length;i++){
-      var test = line + text[i];
-      if(ctx.measureText(test).width > max && line){ out.push(line); line=text[i]; if(out.length>=maxLines){break;} }
-      else line = test;
-    }
-    if(line && out.length<maxLines) out.push(line);
-    return out;
-  }
-  function val(id){ return document.getElementById(id).value.trim(); }
-
-  function draw(){
-    if(!img) return;
-    var t = curTheme;
-    var type = TYPES.filter(function(x){return x.id===curType;})[0];
-
-    // 배경
-    var g = ctx.createLinearGradient(0,0,W,H);
-    g.addColorStop(0,t.bg[0]); g.addColorStop(1,t.bg[1]);
-    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-
-    // 사진 영역 (둥근 모서리 + 흰 테두리 느낌)
-    var px=70, py=80, pw=W-140, phh=760;
-    ctx.save();
-    ctx.shadowColor='rgba(40,40,60,.18)'; ctx.shadowBlur=34; ctx.shadowOffsetY=14;
-    ctx.fillStyle='#fff'; rr(px-12,py-12,pw+24,phh+24,40); ctx.fill();
-    ctx.restore();
-    ctx.save(); rr(px,py,pw,phh,30); ctx.clip();
-    drawCover(img, px,py,pw,phh, posY);
-    ctx.restore();
-
-    // 상단 배지
-    ctx.font = '700 30px -apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif';
-    var bw = ctx.measureText(type.badge).width + 56;
-    var bx = (W-bw)/2, by = py+34;
-    ctx.fillStyle = t.accent; rr(bx,by,bw,58,29); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(type.badge, W/2, by+30);
-
-    // 정보 카드 (사진 아래)
-    var iy = py+phh+44;
-    var ih = H - iy - 70;
-    ctx.save();
-    ctx.shadowColor='rgba(40,40,60,.10)'; ctx.shadowBlur=24; ctx.shadowOffsetY=8;
-    ctx.fillStyle = t.card; rr(px-12, iy, pw+24, ih, 34); ctx.fill();
-    ctx.restore();
-
-    var cx = W/2;
-    var name = val('name') || '이름';
-    var breed = val('breed'), age = val('age');
-    var sub = [breed, age].filter(Boolean).join(' · ');
-    var msg = val('msg');
-
-    // 이름
-    ctx.textAlign='center'; ctx.textBaseline='alphabetic';
-    ctx.fillStyle = t.ink;
-    ctx.font = '800 78px -apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif';
-    ctx.fillText(name, cx, iy+118);
-
-    // 발바닥 구분선
-    ctx.font = '30px sans-serif'; ctx.fillStyle = t.accent;
-    ctx.fillText('🐾  •  🐾', cx, iy+160);
-
-    // 종류·나이
-    var yy = iy+220;
-    if(sub){
-      ctx.fillStyle = t.sub;
-      ctx.font = '500 40px -apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif';
-      ctx.fillText(sub, cx, yy); yy += 66;
-    }
-    // 한마디
-    if(msg){
-      ctx.fillStyle = t.ink;
-      ctx.font = '500 40px -apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif';
-      var lines = wrap(msg, pw-120, 2);
-      for(var i=0;i<lines.length;i++){ ctx.fillText(lines[i], cx, yy); yy += 54; }
-    }
-
-    // 스티커 흩뿌리기
-    drawStickers(px,py,pw,phh, type);
-
-    updateOutputs();
-  }
-
-  function drawStickers(px,py,pw,phh, type){
-    var items = [];
-    STICKERS.forEach(function(s){ if(sticker[s.id]) items.push(s.emoji); });
-    // 카드 종류 기본 장식 추가
-    if(type.deco==='party'){ items.push('🎉','🎈'); }
-    if(items.length===0) return;
-    // 사진 네 귀퉁이 근처에 배치
-    var spots = [
-      [px+30, py+phh-26], [px+pw-58, py+78],
-      [px+pw-66, py+phh-30], [px+34, py+96]
-    ];
-    ctx.textAlign='left'; ctx.textBaseline='alphabetic';
-    ctx.font = '60px sans-serif';
-    for(var i=0;i<spots.length;i++){
-      var em = items[i % items.length];
-      ctx.save();
-      ctx.shadowColor='rgba(0,0,0,.18)'; ctx.shadowBlur=10; ctx.shadowOffsetY=3;
-      ctx.fillText(em, spots[i][0], spots[i][1]);
-      ctx.restore();
-    }
-  }
-
-  // ---------- 저장 / 공유 ----------
-  function fileName(){
-    var n = val('name') || 'pet';
-    return n.replace(/[^\w가-힣]/g,'') + '_자랑카드.png';
-  }
-  function toBlob(cb){ cv.toBlob(cb, 'image/png'); }
-
-  document.getElementById('dl').addEventListener('click', function(){
-    if(!img) return;
-    toBlob(function(blob){
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url; a.download = fileName();
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+      box.appendChild(b);
     });
+  }
+  buildChips('ratios', RATIOS, function(r){return r.id;}, function(r){return r.label;}, curRatio, function(id){ curRatio=id; applyRatio(); });
+  buildChips('layouts', Object.keys(LAYOUTS).map(function(k){return {id:k};}), function(o){return o.id;}, function(o){return LAYOUT_LABELS[o.id];}, curLayout, function(id){ curLayout=id; renderSlots(); });
+  buildChips('filters', FILTERS, function(f){return f.id;}, function(f){return f.label;}, curFilter, function(id){ curFilter=id; applyFilter(); });
+
+  // 스티커 카테고리 + 그리드
+  var catBox=document.getElementById('cats'), stickBox=document.getElementById('stickers');
+  STICKER_CATS.forEach(function(c){
+    var b=document.createElement('button'); b.className='chip catbtn'; b.textContent=c.label;
+    b.setAttribute('aria-pressed', c.id===curCat?'true':'false');
+    b.onclick=function(){ curCat=c.id;
+      [].forEach.call(catBox.children,function(x,i){ x.setAttribute('aria-pressed', STICKER_CATS[i].id===curCat?'true':'false'); });
+      renderStickers(); };
+    catBox.appendChild(b);
+  });
+  function renderStickers(){
+    var cat=STICKER_CATS.filter(function(c){return c.id===curCat;})[0];
+    stickBox.innerHTML='';
+    cat.items.forEach(function(em){
+      var b=document.createElement('button'); b.className='sbtn'; b.textContent=em;
+      b.onclick=function(){ addLayer('emoji', em); };
+      stickBox.appendChild(b);
+    });
+  }
+  renderStickers();
+
+  // 글자 색
+  var swBox=document.getElementById('swatches');
+  TEXTCOLORS.forEach(function(col){
+    var b=document.createElement('button'); b.className='sw'; b.style.background=col;
+    b.setAttribute('aria-pressed', col===curColor?'true':'false');
+    b.onclick=function(){ setColor(col); };
+    swBox.appendChild(b);
+  });
+  // 커스텀 색
+  var customBtn=document.createElement('button'); customBtn.className='sw custom'; customBtn.title='직접 고르기'; customBtn.textContent='🎨';
+  var colorInput=document.createElement('input'); colorInput.type='color'; colorInput.value='#ff5e8e';
+  customBtn.onclick=function(){ colorInput.click(); };
+  colorInput.oninput=function(){ setColor(colorInput.value); };
+  swBox.appendChild(customBtn); swBox.appendChild(colorInput);
+  function setColor(col){
+    curColor=col;
+    [].forEach.call(swBox.querySelectorAll('.sw'),function(s){ s.setAttribute('aria-pressed', s.style.background && rgbEq(s.style.background,col)?'true':'false'); });
+    if(selected && selected.type==='text'){ selected.color=col; selected.el.querySelector('.c').style.color=col; }
+  }
+  function rgbEq(a,b){ return a.replace(/\s/g,'').toLowerCase()===b.replace(/\s/g,'').toLowerCase(); }
+
+  document.getElementById('addtxt').onclick=function(){
+    var v=document.getElementById('txtin').value.trim() || '텍스트';
+    addLayer('text', v);
+  };
+  document.getElementById('txtin').addEventListener('input', function(){
+    if(selected && selected.type==='text'){ selected.content=this.value||' '; selected.el.querySelector('.c').textContent=selected.content; }
   });
 
-  document.getElementById('share').addEventListener('click', function(){
-    if(!img) return;
-    toBlob(function(blob){
-      var file = new File([blob], fileName(), {type:'image/png'});
-      if(navigator.canShare && navigator.canShare({files:[file]})){
-        navigator.share({ files:[file], title:'우리 아이 자랑카드', text:'🐾 우리 아이 자랑해요!' })
-          .catch(function(){});
+  // ---------- 무대 / 슬롯 ----------
+  function applyRatio(){ stage.style.aspectRatio = curRatio.replace('/',' / '); relayoutLayers(); }
+  function renderSlots(){
+    // 기존 슬롯 제거(레이어는 유지)
+    [].forEach.call(stage.querySelectorAll('.slot'),function(s){ s.remove(); });
+    var cells=LAYOUTS[curLayout];
+    cells.forEach(function(c, idx){
+      var s=document.createElement('div'); s.className='slot';
+      s.style.left=(c.x*100)+'%'; s.style.top=(c.y*100)+'%';
+      s.style.width=(c.w*100)+'%'; s.style.height=(c.h*100)+'%';
+      var inner=document.createElement('div'); inner.className='inner';
+      if(slotImgs[idx]){
+        var im=document.createElement('img'); im.src=slotImgs[idx].src; im.style.filter=filterCss();
+        inner.appendChild(im);
       } else {
-        // 공유 미지원 → 저장으로 안내
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url; a.download = fileName();
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
-        alert('이 브라우저는 바로 공유가 안 돼요. 카드를 저장했으니 인스타·카톡에 올려 자랑하세요! 🐾');
+        var emp=document.createElement('div'); emp.className='empty';
+        emp.innerHTML='<span class="e">📷</span>탭하여 사진';
+        inner.appendChild(emp);
       }
+      s.appendChild(inner);
+      s.addEventListener('click', function(ev){ if(ev.target.closest('.layer')) return; openChooser(idx); });
+      stage.insertBefore(s, stage.firstChild); // 슬롯은 레이어 밑에
     });
+  }
+  function filterCss(){ return FILTERS.filter(function(f){return f.id===curFilter;})[0].css; }
+  function applyFilter(){ [].forEach.call(stage.querySelectorAll('.slot img'),function(im){ im.style.filter=filterCss(); }); }
+
+  // ---------- 레이어(스티커/글자) ----------
+  function baseFrac(type){ return type==='emoji'?0.16:0.085; }
+  function addLayer(type, content){
+    var l={ id:nextId++, type:type, content:content, x:0.5, y:0.5, scale:1, rot:0, color:(type==='text'?curColor:null), el:null };
+    var el=document.createElement('div'); el.className='layer'+(type==='text'?' txt':'');
+    var c=document.createElement('div'); c.className='c'; c.textContent=content;
+    if(type==='text'){ c.style.color=l.color; }
+    el.appendChild(c);
+    var del=document.createElement('div'); del.className='h del'; del.textContent='✕';
+    var tf=document.createElement('div'); tf.className='h tf'; tf.textContent='⤡';
+    el.appendChild(del); el.appendChild(tf);
+    el.dataset.id=l.id;
+    stage.appendChild(el);
+    l.el=el;
+    layers.push(l);
+    sizeLayer(l);
+    placeLayer(l);
+    select(l);
+    bindLayer(l, del, tf);
+    return l;
+  }
+  function sizeLayer(l){ l.el.querySelector('.c').style.fontSize = (stage.clientWidth*baseFrac(l.type))+'px'; }
+  function relayoutLayers(){ layers.forEach(function(l){ sizeLayer(l); placeLayer(l); }); }
+  function placeLayer(l){
+    l.el.style.left=(l.x*100)+'%'; l.el.style.top=(l.y*100)+'%';
+    l.el.style.setProperty('--s', l.scale);
+    l.el.style.transform='translate(-50%,-50%) rotate('+l.rot+'rad) scale(var(--s))';
+  }
+  function select(l){
+    selected=l;
+    layers.forEach(function(x){ x.el.classList.toggle('sel', x===l); });
+    // 선택 레이어를 맨 위로 (DOM 재배치 대신 z-index — 드래그 중 끊김 방지)
+    if(l){ topZ++; l.el.style.zIndex=topZ; }
+    if(l && l.type==='text'){ document.getElementById('txtin').value = (l.content===' '?'':l.content); if(l.color) setColor(l.color); }
+  }
+  stage.addEventListener('pointerdown', function(ev){
+    if(ev.target===stage){ selected=null; layers.forEach(function(x){ x.el.classList.remove('sel'); }); }
   });
 
-  function updateOutputs(){}
+  function bindLayer(l, del, tf){
+    var el=l.el;
+    // 드래그(이동)
+    el.addEventListener('pointerdown', function(ev){
+      if(ev.target===del || ev.target===tf) return;
+      ev.stopPropagation();
+      select(l);
+      try{ el.setPointerCapture(ev.pointerId); }catch(e){}
+      var r=stage.getBoundingClientRect();
+      var startFx=(ev.clientX-r.left)/r.width, startFy=(ev.clientY-r.top)/r.height;
+      var ox=startFx-l.x, oy=startFy-l.y;
+      el.style.cursor='grabbing';
+      function move(e){
+        var fx=(e.clientX-r.left)/r.width, fy=(e.clientY-r.top)/r.height;
+        l.x=Math.max(0,Math.min(1,fx-ox)); l.y=Math.max(0,Math.min(1,fy-oy));
+        placeLayer(l);
+      }
+      function up(e){ try{ el.releasePointerCapture(ev.pointerId); }catch(e2){} el.removeEventListener('pointermove',move); el.removeEventListener('pointerup',up); el.style.cursor='grab'; }
+      el.addEventListener('pointermove',move); el.addEventListener('pointerup',up);
+    });
+    // 삭제
+    del.addEventListener('pointerdown', function(ev){ ev.stopPropagation(); });
+    del.addEventListener('click', function(ev){ ev.stopPropagation(); removeLayer(l); });
+    // 크기+회전
+    tf.addEventListener('pointerdown', function(ev){
+      ev.stopPropagation(); select(l);
+      try{ tf.setPointerCapture(ev.pointerId); }catch(e){}
+      var r=stage.getBoundingClientRect();
+      var cx=r.left+l.x*r.width, cy=r.top+l.y*r.height;
+      var d0=Math.hypot(ev.clientX-cx, ev.clientY-cy)||1;
+      var a0=Math.atan2(ev.clientY-cy, ev.clientX-cx);
+      var s0=l.scale, r0=l.rot;
+      function move(e){
+        var d=Math.hypot(e.clientX-cx, e.clientY-cy);
+        var a=Math.atan2(e.clientY-cy, e.clientX-cx);
+        l.scale=Math.max(0.35,Math.min(4.5, s0*(d/d0)));
+        l.rot=r0+(a-a0);
+        placeLayer(l);
+      }
+      function up(e){ try{ tf.releasePointerCapture(ev.pointerId); }catch(e2){} tf.removeEventListener('pointermove',move); tf.removeEventListener('pointerup',up); }
+      tf.addEventListener('pointermove',move); tf.addEventListener('pointerup',up);
+    });
+  }
+  function removeLayer(l){
+    var i=layers.indexOf(l); if(i>=0) layers.splice(i,1);
+    l.el.remove(); if(selected===l) selected=null;
+  }
+
+  // ---------- 사진 넣기(앨범/카메라) ----------
+  var chooser=document.getElementById('chooser'), cam=document.getElementById('cam');
+  var fileInput=document.getElementById('file');
+  var targetSlot=0;
+  function openChooser(idx){ targetSlot=idx; chooser.classList.add('on'); }
+  document.getElementById('chooserClose').onclick=function(){ chooser.classList.remove('on'); };
+  document.getElementById('pickAlbum').onclick=function(){ chooser.classList.remove('on'); fileInput.click(); };
+  document.getElementById('pickCam').onclick=function(){ chooser.classList.remove('on'); openCamera(); };
+
+  fileInput.addEventListener('change', function(e){
+    var f=e.target.files && e.target.files[0]; if(!f) return;
+    var rd=new FileReader();
+    rd.onload=function(ev){ var im=new Image(); im.onload=function(){ slotImgs[targetSlot]=im; renderSlots(); }; im.src=ev.target.result; };
+    rd.readAsDataURL(f); fileInput.value='';
+  });
+
+  // 카메라
+  var stream=null, facing='environment';
+  var vid=document.getElementById('vid'), camErrBox=document.getElementById('camErrBox');
+  function openCamera(){
+    cam.classList.add('on'); camErrBox.innerHTML=''; startStream();
+  }
+  function startStream(){
+    stopStream();
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      camErrBox.innerHTML='<div class="camerr">이 브라우저는 카메라를 지원하지 않아요. 앨범에서 골라주세요.</div>'; return;
+    }
+    navigator.mediaDevices.getUserMedia({ video:{ facingMode:facing }, audio:false })
+      .then(function(s){ stream=s; vid.srcObject=s; vid.play().catch(function(){}); })
+      .catch(function(err){
+        camErrBox.innerHTML='<div class="camerr">카메라를 열 수 없어요('+ (err.name||'오류') +'). 권한을 허용하거나 앨범을 이용해 주세요.</div>';
+      });
+  }
+  function stopStream(){ if(stream){ stream.getTracks().forEach(function(t){t.stop();}); stream=null; } }
+  document.getElementById('flip').onclick=function(){ facing = (facing==='environment'?'user':'environment'); startStream(); };
+  document.getElementById('camClose').onclick=function(){ stopStream(); cam.classList.remove('on'); };
+  document.getElementById('snap').onclick=function(){
+    if(!vid.videoWidth){ return; }
+    var c=document.createElement('canvas'); c.width=vid.videoWidth; c.height=vid.videoHeight;
+    var x=c.getContext('2d');
+    if(facing==='user'){ x.translate(c.width,0); x.scale(-1,1); } // 셀카 거울 보정
+    x.drawImage(vid,0,0);
+    var im=new Image(); im.onload=function(){ slotImgs[targetSlot]=im; renderSlots(); }; im.src=c.toDataURL('image/png');
+    stopStream(); cam.classList.remove('on');
+  };
+
+  // ---------- 내보내기 ----------
+  function ratioWH(){
+    var p=curRatio.split('/'); var rw=+p[0], rh=+p[1];
+    var W=1080; var H=Math.round(W*rh/rw); return {W:W,H:H};
+  }
+  function roundRectPath(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+  function drawCover(ctx,im,x,y,w,h){
+    var ir=im.width/im.height, rt=w/h, sw,sh,sx,sy;
+    if(ir>rt){ sh=im.height; sw=sh*rt; sx=(im.width-sw)/2; sy=0; }
+    else{ sw=im.width; sh=sw/rt; sx=0; sy=(im.height-sh)/2; }
+    ctx.drawImage(im,sx,sy,sw,sh,x,y,w,h);
+  }
+  function exportCanvas(){
+    var d=ratioWH(); var W=d.W, H=d.H;
+    var c=document.createElement('canvas'); c.width=W; c.height=H;
+    var ctx=c.getContext('2d');
+    ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H);
+    var gap=Math.round(W*0.012), rad=Math.round(W*0.022);
+    LAYOUTS[curLayout].forEach(function(cell, idx){
+      var x=cell.x*W+gap, y=cell.y*H+gap, w=cell.w*W-gap*2, h=cell.h*H-gap*2;
+      ctx.save(); roundRectPath(ctx,x,y,w,h,rad); ctx.clip();
+      if(slotImgs[idx]){ ctx.filter=filterCss()==='none'?'none':filterCss(); drawCover(ctx,slotImgs[idx],x,y,w,h); ctx.filter='none'; }
+      else{ ctx.fillStyle='#eef1f6'; ctx.fillRect(x,y,w,h); }
+      ctx.restore();
+    });
+    // 레이어
+    layers.forEach(function(l){
+      ctx.save();
+      ctx.translate(l.x*W, l.y*H); ctx.rotate(l.rot);
+      var fs=W*baseFrac(l.type)*l.scale;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      if(l.type==='text'){
+        ctx.font='800 '+fs+'px -apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif';
+        ctx.lineJoin='round'; ctx.lineWidth=fs*0.16; ctx.strokeStyle='rgba(0,0,0,.32)'; ctx.strokeText(l.content,0,0);
+        ctx.fillStyle=l.color||'#fff'; ctx.fillText(l.content,0,0);
+      } else {
+        ctx.font=fs+'px sans-serif';
+        ctx.shadowColor='rgba(0,0,0,.25)'; ctx.shadowBlur=fs*0.08; ctx.shadowOffsetY=fs*0.04;
+        ctx.fillText(l.content,0,0);
+      }
+      ctx.restore();
+    });
+    return c;
+  }
+  function hasPhoto(){ return slotImgs.some(function(im,i){ return im && i<LAYOUTS[curLayout].length; }); }
+  function fileName(){ return 'pet_' + Date.now() + '.png'; }
+
+  document.getElementById('dl').onclick=function(){
+    if(!hasPhoto()){ alert('먼저 사진을 넣어주세요 🐾 (사진 칸을 탭)'); return; }
+    selectNone();
+    exportCanvas().toBlob(function(b){
+      var url=URL.createObjectURL(b); var a=document.createElement('a'); a.href=url; a.download=fileName();
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(url);},1500);
+    },'image/png');
+  };
+  document.getElementById('share').onclick=function(){
+    if(!hasPhoto()){ alert('먼저 사진을 넣어주세요 🐾 (사진 칸을 탭)'); return; }
+    selectNone();
+    exportCanvas().toBlob(function(b){
+      var f=new File([b], fileName(), {type:'image/png'});
+      if(navigator.canShare && navigator.canShare({files:[f]})){
+        navigator.share({files:[f], title:'우리 아이 자랑', text:'🐾 우리 아이 자랑해요!'}).catch(function(){});
+      } else {
+        var url=URL.createObjectURL(b); var a=document.createElement('a'); a.href=url; a.download=fileName();
+        document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(url);},1500);
+        alert('이 브라우저는 바로 공유가 안 돼요. 이미지를 저장했으니 인스타·카톡에 올려 자랑하세요! 🐾');
+      }
+    },'image/png');
+  };
+  function selectNone(){ selected=null; layers.forEach(function(x){ x.el.classList.remove('sel'); }); }
+
+  document.getElementById('reset').onclick=function(){
+    if(!confirm('처음부터 다시 할까요? (사진·스티커·글자 모두 지워져요)')) return;
+    slotImgs=[]; layers.slice().forEach(removeLayer); curLayout='1';
+    [].forEach.call(document.getElementById('layouts').children,function(c,i){ c.setAttribute('aria-pressed', Object.keys(LAYOUTS)[i]==='1'?'true':'false'); });
+    renderSlots();
+  };
+
+  window.addEventListener('resize', relayoutLayers);
+
+  // ---------- 초기 ----------
+  applyRatio(); renderSlots();
 })();
 </script>
 </body>
